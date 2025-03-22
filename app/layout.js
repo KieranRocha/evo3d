@@ -1,5 +1,8 @@
+// app/layout.js - Componente do servidor
 import { Geist, Geist_Mono } from "next/font/google";
+import Navbar from "./components/Navbar"; // Componente que criaremos a seguir
 import "./globals.css";
+import Footer from "./components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,7 +25,12 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <div className="flex flex-col min-h-screen">
+          <Navbar />
+          <main className="">{children}</main>
+          {/* Footer aqui se desejar */}
+          <Footer />
+        </div>
       </body>
     </html>
   );
