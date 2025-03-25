@@ -27,7 +27,7 @@ const CartPage = () => {
             <ShoppingCart size={36} className="mr-3" />
             Carrinho de Compras
           </h1>
-          <p className="text-lg text-gray-800 mt-2">
+          <p className="text-lg text-gray-800 mt-2 font-poppins">
             {totalQuantity > 0
               ? `Você tem ${totalQuantity} ${
                   totalQuantity === 1 ? "item" : "itens"
@@ -79,7 +79,7 @@ const CartPage = () => {
               href="/upload"
               className="px-8 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-md inline-flex items-center"
             >
-              Começar a Comprar
+              Faça um Upload
             </Link>
           </div>
         )}

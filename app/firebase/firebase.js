@@ -1,6 +1,8 @@
+// app/firebase/firebase.js
 import { initializeApp, getApps } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -22,5 +24,5 @@ if (!getApps().length) {
 
 // Exporta os serviços do Firebase
 export const auth = getAuth(firebaseApp);
-export const database = getDatabase(firebaseApp);
+export const db = getFirestore(firebaseApp);
 export default firebaseApp;

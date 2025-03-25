@@ -537,6 +537,58 @@ function StepperUpload() {
                   onUpdateQuantity={updateQuantity}
                   onRemoveFile={removeFile}
                 />
+                {allFilesConfigured && files.length > 0 && (
+                  <div className="mt-8 w-full max-w-6xl">
+                    <div className="bg-blue-100 p-6 rounded-lg shadow-sm border">
+                      <h3 className="font-semibold text-lg">
+                        Resumo do pedido
+                      </h3>
+                      <div className="mt-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span>Total de modelos:</span>
+                          <span>{files.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total de peças:</span>
+                          <span>
+                            {files.reduce(
+                              (sum, file) => sum + file.quantity,
+                              0
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex justify-between font-medium text-lg pt-2 border-t">
+                          <span>Custo estimado:</span>
+                          <span>R$ {calculateEstimatedCost()}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex flex-col  gap-4 justify-center">
+                        <button
+                          className="px-8 cursor-pointer py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-md flex items-center justify-center"
+                          onClick={addItemsToCart}
+                          disabled={addingToCart}
+                        >
+                          {addingToCart ? (
+                            <>Adicionando...</>
+                          ) : (
+                            <>
+                              <ShoppingCart size={18} className="mr-2" />
+                              Adicionar ao Carrinho
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          className="px-8 py-3 cursor-pointer bg-white border border-primary text-primary font-medium rounded-xl hover:bg-primary-50 transition-colors flex items-center justify-center"
+                          onClick={processPayment}
+                        >
+                          Comprar Agora
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Painel de configuração */}
@@ -617,53 +669,6 @@ function StepperUpload() {
           )}
 
           {/* Action Buttons & Resumo do pedido */}
-          {allFilesConfigured && files.length > 0 && (
-            <div className="mt-8 w-full max-w-6xl">
-              <div className="bg-white p-6 rounded-lg shadow-sm border">
-                <h3 className="font-semibold text-lg">Resumo do pedido</h3>
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span>Total de modelos:</span>
-                    <span>{files.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Total de peças:</span>
-                    <span>
-                      {files.reduce((sum, file) => sum + file.quantity, 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between font-medium text-lg pt-2 border-t">
-                    <span>Custo estimado:</span>
-                    <span>R$ {calculateEstimatedCost()}</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-col md:flex-row gap-4 justify-center">
-                  <button
-                    className="px-8 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-md flex items-center justify-center"
-                    onClick={addItemsToCart}
-                    disabled={addingToCart}
-                  >
-                    {addingToCart ? (
-                      <>Adicionando...</>
-                    ) : (
-                      <>
-                        <ShoppingCart size={18} className="mr-2" />
-                        Adicionar ao Carrinho
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    className="px-8 py-3 border border-primary text-primary font-medium rounded-xl hover:bg-primary-50 transition-colors flex items-center justify-center"
-                    onClick={processPayment}
-                  >
-                    Comprar Agora
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

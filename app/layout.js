@@ -1,9 +1,10 @@
-// app/layout.js - Updated with Redux Provider
+// app/layout.js - Updated with Auth Provider
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "./components/Navbar";
 import "./globals.css";
 import Footer from "./components/Footer";
 import { ReduxProvider } from "./redux/provider";
+import { AuthProviderWrapper } from "./providers/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,11 +29,13 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ReduxProvider>
-          <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="">{children}</main>
-            <Footer />
-          </div>
+          <AuthProviderWrapper>
+            <div className="flex flex-col min-h-screen">
+              <Navbar />
+              <main className="">{children}</main>
+              <Footer />
+            </div>
+          </AuthProviderWrapper>
         </ReduxProvider>
       </body>
     </html>
