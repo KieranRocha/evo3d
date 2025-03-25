@@ -1,12 +1,15 @@
+// app/upload/page.js
 "use client";
 
 import React, { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, ShoppingCart, Check } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { addToCart } from "../redux/slices/cartSlice";
+import { useRouter } from "next/navigation";
 import PrintTimeEstimator from "../components/PrintTimeEstimator";
 
 // Import our separated components
-
 import FileList from "../components/FileList";
 import FillOptions from "../components/FillOptions";
 import MaterialOptions from "../components/MaterialOptions";
@@ -15,12 +18,16 @@ import ConfigurationStepper from "../components/ConfigurationStepper";
 import { calculateMaterialPrices } from "../components/MaterialPriceCalculator";
 
 function StepperUpload() {
+  const dispatch = useDispatch();
+  const router = useRouter();
   const [files, setFiles] = useState([]);
   const [error, setError] = useState(null);
   const [selectedFileIndex, setSelectedFileIndex] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [materialPrices, setMaterialPrices] = useState({});
   const [loadingMaterialPrices, setLoadingMaterialPrices] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   // Dados para as opções
   const fillOptions = [
@@ -108,6 +115,17 @@ function StepperUpload() {
     { id: "green", name: "Verde", value: "#00ff00", price: 1.1 },
     { id: "yellow", name: "Amarelo", value: "#ffff00", price: 1.1 },
   ];
+
+  // Reset cart confirmation message after 3 seconds
+  useEffect(() => {
+    if (addedToCart) {
+      const timer = setTimeout(() => {
+        setAddedToCart(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [addedToCart]);
 
   // Fetch material prices when a file is selected and fill option is chosen
   useEffect(() => {
@@ -358,12 +376,9 @@ function StepperUpload() {
     let totalCost = 0;
 
     files.forEach((file) => {
-      if (file.isConfigured && file.material?.totalPrice) {
-        // O totalPrice já deve incluir a quantidade, mas vamos garantir isso
+      if (file.isConfigured && file.material?.calculatedPrice) {
         const itemPrice = file.material.calculatedPrice || 0;
         const quantity = file.quantity || 1;
-
-        // Adiciona o preço do item multiplicado pela quantidade
         totalCost += itemPrice * quantity;
       }
     });
@@ -371,26 +386,75 @@ function StepperUpload() {
     return totalCost.toFixed(2);
   };
 
-  async function processPayment(amount, description) {
-    const response = await fetch("http://localhost:5000/create-payment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: amount, // valor em centavos (ex: 5000 para R$50,00)
-        currency: "brl",
-        description: description,
-        success_url: "https://localhost.com:3000/pagamento-sucesso",
-        cancel_url: "https://localhost.com:3000/pagamento-cancelado",
-      }),
-    });
+  // Function to add all configured items to cart
+  const addItemsToCart = () => {
+    setAddingToCart(true);
 
-    const session = await response.json();
+    try {
+      const configuredFiles = files.filter((file) => file.isConfigured);
 
-    // Redireciona para a página de checkout do Stripe
-    window.location.href = session.url;
-  }
+      configuredFiles.forEach((file) => {
+        const cartItem = {
+          id: `${file.file.name}_${Date.now()}`, // Create a unique ID
+          name: file.file.name,
+          url: file.url,
+          quantity: file.quantity,
+          fill: file.fill,
+          material: file.material,
+          color: file.color,
+          price: file.material.calculatedPrice,
+          totalPrice: file.material.calculatedPrice * file.quantity,
+        };
+
+        dispatch(addToCart(cartItem));
+      });
+
+      setAddedToCart(true);
+      setTimeout(() => {
+        router.push("/carrinho");
+      }, 1000);
+    } catch (error) {
+      console.error("Error adding items to cart:", error);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  // Function to process payment directly
+  const processPayment = async () => {
+    try {
+      const totalCost = calculateEstimatedCost();
+      const amountInCents = Math.round(parseFloat(totalCost) * 100);
+      const description = `Impressão 3D - ${
+        files.length
+      } modelo(s), ${files.reduce(
+        (sum, file) => sum + file.quantity,
+        0
+      )} peça(s)`;
+
+      const response = await fetch("http://localhost:5000/create-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: amountInCents,
+          currency: "brl",
+          description: description,
+          success_url: "https://localhost.com:3000/pagamento-sucesso",
+          cancel_url: "https://localhost.com:3000/pagamento-cancelado",
+        }),
+      });
+
+      const session = await response.json();
+      window.location.href = session.url;
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+      alert(
+        "Houve um erro ao processar o pagamento. Por favor, tente novamente."
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -452,6 +516,14 @@ function StepperUpload() {
               </div>
             )}
           </div>
+
+          {/* Added to Cart Confirmation Message */}
+          {addedToCart && (
+            <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center">
+              <Check className="mr-2" />
+              <span>Items adicionados ao carrinho!</span>
+            </div>
+          )}
 
           {/* Conteúdo principal com lista de arquivos e configuração */}
           {files.length > 0 && (
@@ -544,7 +616,7 @@ function StepperUpload() {
             </div>
           )}
 
-          {/* Resumo do pedido e botão de continuação */}
+          {/* Action Buttons & Resumo do pedido */}
           {allFilesConfigured && files.length > 0 && (
             <div className="mt-8 w-full max-w-6xl">
               <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -566,25 +638,27 @@ function StepperUpload() {
                   </div>
                 </div>
 
-                <div className="mt-6 flex justify-center">
+                <div className="mt-6 flex flex-col md:flex-row gap-4 justify-center">
                   <button
-                    className="px-8 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-md"
-                    onClick={() => {
-                      const totalCost = calculateEstimatedCost();
-                      const amountInCents = Math.round(
-                        parseFloat(totalCost) * 100
-                      );
-                      const description = `Impressão 3D - ${
-                        files.length
-                      } modelo(s), ${files.reduce(
-                        (sum, file) => sum + file.quantity,
-                        0
-                      )} peça(s)`;
-
-                      processPayment(amountInCents, description);
-                    }}
+                    className="px-8 py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-md flex items-center justify-center"
+                    onClick={addItemsToCart}
+                    disabled={addingToCart}
                   >
-                    Continuar para pagamento
+                    {addingToCart ? (
+                      <>Adicionando...</>
+                    ) : (
+                      <>
+                        <ShoppingCart size={18} className="mr-2" />
+                        Adicionar ao Carrinho
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    className="px-8 py-3 border border-primary text-primary font-medium rounded-xl hover:bg-primary-50 transition-colors flex items-center justify-center"
+                    onClick={processPayment}
+                  >
+                    Comprar Agora
                   </button>
                 </div>
               </div>

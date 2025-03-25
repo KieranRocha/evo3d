@@ -4,10 +4,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { ShoppingCart } from "lucide-react";
 
 export default function Navbar() {
   const [prevScrollPos, setPrevScrollPos] = useState(0);
   const [visible, setVisible] = useState(true);
+  const { totalQuantity } = useSelector((state) => state.cart);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,8 +45,8 @@ export default function Navbar() {
               <Image
                 src="/evo-logo.png"
                 alt="Evo Logo"
-                width={120} // Aumente para um valor mais próximo do tamanho real
-                height={120} // Ajuste para manter a proporção correta
+                width={120}
+                height={120}
                 quality={100}
                 className="h-12 w-auto"
                 priority
@@ -53,7 +56,7 @@ export default function Navbar() {
 
           {/* Nav Links */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 items-center">
               <Link
                 href="/"
                 className="px-3 py-2 rounded-md font-medium text-gray-900 hover:bg-gray-100 transition"
@@ -72,6 +75,20 @@ export default function Navbar() {
               >
                 Contato
               </Link>
+
+              {/* Cart Icon */}
+              <Link
+                href="/carrinho"
+                className="relative px-3 py-2 rounded-md font-medium text-gray-900 hover:bg-gray-100 transition"
+              >
+                <ShoppingCart size={20} />
+                {totalQuantity > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {totalQuantity}
+                  </span>
+                )}
+              </Link>
+
               <div className="px-3 py-2 rounded-md font-medium text-gray-900 hover:bg-gray-200 transition border">
                 Entrar
               </div>
@@ -83,6 +100,16 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <div className="sm:hidden flex items-center">
+            {/* Mobile Cart Icon */}
+            <Link href="/carrinho" className="relative mr-4">
+              <ShoppingCart size={20} className="text-gray-700" />
+              {totalQuantity > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {totalQuantity}
+                </span>
+              )}
+            </Link>
+
             <button
               type="button"
               className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none"

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Producto from "../components/Product";
 
 export default function SimpleTestPage() {
   const [loading, setLoading] = useState(false);
@@ -74,7 +73,7 @@ export default function SimpleTestPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <Producto />
+      oi
     </div>
   );
 }
