@@ -25,7 +25,7 @@ const MaterialOptions = ({
           return (
             <div
               key={material.id}
-              className={`border rounded-lg p-3 cursor-pointer transition-all
+              className={`border rounded-lg p-3 cursor-pointer transition-all shadow-xs
                 ${
                   selectedMaterial?.id === material.id
                     ? "border-primary bg-primary-50"

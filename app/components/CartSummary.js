@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import Link from "next/link";
 import { ShoppingBag, Truck } from "lucide-react";
-import MercadoPagoCheckout from "../components/MercadoPagoCheckout";
+import PagarmeTransparentCheckout from "./PagarmeTransparentCheckout";
 
 const CartSummary = () => {
   const { items, totalAmount } = useSelector((state) => state.cart);
@@ -24,7 +24,7 @@ const CartSummary = () => {
   // Calculate total items count
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Transform items to the format expected by MercadoPagoCheckout
+  // Transform items to the format expected by PagarmeTransparentCheckout
   useEffect(() => {
     const transformedCart = items.map((item) => {
       const itemPrice = item.price || 0;
@@ -42,9 +42,6 @@ const CartSummary = () => {
           material: item.material?.name,
           color: item.color?.name,
         },
-        // Additional properties required by Mercado Pago
-        currency_id: "BRL",
-        unit_price: itemPrice,
         description: `${item.fill?.name || ""} | ${
           item.material?.name || ""
         } | ${item.color?.name || ""}`.trim(),
@@ -53,35 +50,6 @@ const CartSummary = () => {
 
     setCart(transformedCart);
   }, [items]);
-
-  const handleCheckout = async () => {
-    try {
-      // This would be replaced with your actual payment processing logic
-      const response = await fetch("http://localhost:5000/create-payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: Math.round(total * 100), // convert to cents
-          currency: "brl",
-          description: `Pedido EVO 3D - ${totalItems} item(s)`,
-          success_url: "https://localhost:3000/pagamento-sucesso",
-          cancel_url: "https://localhost:3000/pagamento-cancelado",
-        }),
-      });
-
-      const session = await response.json();
-
-      // Redirect to payment page
-      window.location.href = session.url;
-    } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
-      alert(
-        "Houve um erro ao processar o pagamento. Por favor, tente novamente."
-      );
-    }
-  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -116,10 +84,14 @@ const CartSummary = () => {
         </div>
       </div>
 
-      {/* Usar o MercadoPagoCheckout com os dados do carrinho transformados */}
+      {/* Usar o PagarmeTransparentCheckout com os dados do carrinho transformados */}
       {items.length > 0 ? (
         <div>
-          <MercadoPagoCheckout cart={cart} buyer={buyer} />
+          <PagarmeTransparentCheckout
+            cart={cart}
+            buyer={buyer}
+            totalAmount={total}
+          />
         </div>
       ) : (
         <button

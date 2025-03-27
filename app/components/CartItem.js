@@ -20,7 +20,7 @@ const CartItem = ({ item }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border overflow-hidden mb-4">
+    <div className="bg-white rounded-lg  shadow-md border-gray-100 border overflow-hidden mb-4">
       <div className="flex items-start p-4">
         <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden mr-4 flex-shrink-0">
           {item.url ? (

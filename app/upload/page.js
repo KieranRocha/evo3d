@@ -16,6 +16,7 @@ import MaterialOptions from "../components/MaterialOptions";
 import ColorOptions from "../components/ColorOptions";
 import ConfigurationStepper from "../components/ConfigurationStepper";
 import { calculateMaterialPrices } from "../components/MaterialPriceCalculator";
+import PrintingBestPractices from "../components/PrintingBestPractices";
 
 function StepperUpload() {
   const dispatch = useDispatch();
@@ -110,10 +111,10 @@ function StepperUpload() {
   const colorOptions = [
     { id: "white", name: "Branco", value: "#ffffff", price: 1.0 },
     { id: "black", name: "Preto", value: "#000000", price: 1.0 },
-    { id: "red", name: "Vermelho", value: "#ff0000", price: 1.1 },
-    { id: "blue", name: "Azul", value: "#0000ff", price: 1.1 },
-    { id: "green", name: "Verde", value: "#00ff00", price: 1.1 },
-    { id: "yellow", name: "Amarelo", value: "#ffff00", price: 1.1 },
+    { id: "red", name: "Vermelho", value: "#eb4034", price: 1.1 },
+    { id: "blue", name: "Azul", value: "#3465eb", price: 1.1 },
+    { id: "green", name: "Verde", value: "#34eb74", price: 1.1 },
+    { id: "yellow", name: "Amarelo", value: "#ebe534", price: 1.1 },
   ];
 
   // Reset cart confirmation message after 3 seconds
@@ -471,7 +472,7 @@ function StepperUpload() {
           <div className="w-full max-w-4xl mb-8">
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed w-full flex items-center justify-center bg-white shadow-lg rounded-xl
+              className={`border-2 border-dashed w-full flex items-center justify-center bg-white shadow-md rounded-xl
                 ${files.length > 0 ? "border-primary h-20 p-4" : "h-60 p-8"}
                 ${
                   isDragActive
@@ -670,6 +671,7 @@ function StepperUpload() {
 
           {/* Action Buttons & Resumo do pedido */}
         </div>
+        <PrintingBestPractices />
       </div>
     </div>
   );

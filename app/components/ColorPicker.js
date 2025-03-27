@@ -12,19 +12,19 @@ function ColorPicker() {
     },
     {
       name: "Red",
-      value: "#ff0000",
+      value: "##eb4034",
     },
     {
       name: "Green",
-      value: "#00ff00",
+      value: "##34eb74",
     },
     {
       name: "Blue",
-      value: "#0000ff",
+      value: "#3465eb",
     },
     {
       name: "Yellow",
-      value: "#ffff00",
+      value: "##ebe534",
     },
   ];
 

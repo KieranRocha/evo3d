@@ -10,7 +10,7 @@ const FillOptions = ({ fillOptions, selectedFill, onSelect }) => {
         {fillOptions.map((fill) => (
           <div
             key={fill.id}
-            className={`border rounded-lg p-3 cursor-pointer transition-all
+            className={`border rounded-lg p-3 cursor-pointer transition-all shadow-xs
               ${
                 selectedFill?.id === fill.id
                   ? "border-primary bg-primary-50"

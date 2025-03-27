@@ -40,7 +40,7 @@ const CartPage = () => {
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Cart Items */}
             <div className="w-full lg:w-2/3">
-              <div className="bg-white rounded-lg shadow-sm border p-4 mb-4 flex justify-between items-center">
+              <div className="bg-white rounded-lg shadow-md border-gray-100 border p-4 mb-4 flex justify-between items-center">
                 <h2 className="text-lg font-semibold flex items-center">
                   <Package size={20} className="mr-2" />
                   Itens do Carrinho

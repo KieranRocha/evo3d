@@ -10,7 +10,7 @@ const ColorOptions = ({ colorOptions, selectedColor, onSelect }) => {
         {colorOptions.map((color) => (
           <div
             key={color.id}
-            className={`border rounded-lg p-3 cursor-pointer transition-all
+            className={`border rounded-lg p-3 cursor-pointer transition-all shadow-xs
               ${
                 selectedColor?.id === color.id
                   ? "border-primary bg-primary-50"
