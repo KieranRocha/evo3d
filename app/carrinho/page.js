@@ -8,6 +8,7 @@ import Link from "next/link";
 import CartItem from "../components/CartItem";
 import CartSummary from "../components/CartSummary";
 import { clearCart } from "../redux/slices/cartSlice";
+import CheckoutSteps from "../components/CheckoutSteps";
 
 const CartPage = () => {
   const { items, totalQuantity } = useSelector((state) => state.cart);
@@ -22,7 +23,7 @@ const CartPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6">
           <h1 className="text-4xl font-bold text-secondary font-poppins flex items-center">
             <ShoppingCart size={36} className="mr-3" />
             Carrinho de Compras
@@ -35,6 +36,9 @@ const CartPage = () => {
               : "Seu carrinho está vazio"}
           </p>
         </div>
+
+        {/* Steps do Checkout */}
+        {totalQuantity > 0 && <CheckoutSteps currentStep={1} />}
 
         {items.length > 0 ? (
           <div className="flex flex-col lg:flex-row gap-8">

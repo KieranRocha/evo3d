@@ -4,10 +4,12 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import Link from "next/link";
-import { ShoppingBag, Truck } from "lucide-react";
-import PagarmeTransparentCheckout from "./PagarmeTransparentCheckout";
+import { useRouter } from "next/navigation";
+import { ShoppingBag, Truck, ArrowRight } from "lucide-react";
 
 const CartSummary = () => {
+  const router = useRouter();
+  const [processing, setProcessing] = useState(false);
   const { items, totalAmount } = useSelector((state) => state.cart);
   const [cart, setCart] = useState([]);
   const [buyer, setBuyer] = useState({
@@ -15,16 +17,16 @@ const CartSummary = () => {
     email: "cliente@example.com",
   });
 
-  // Calculate subtotal, shipping, taxes
+  // Cálculos de valores
   const subtotal = totalAmount;
-  const shipping = subtotal > 0 ? 15.0 : 0; // Example shipping cost
-  const taxes = subtotal * 0.05; // Example tax rate (5%)
+  const shipping = subtotal > 0 ? 15.0 : 0; // Custo padrão de envio
+  const taxes = subtotal * 0.05; // Taxa exemplo (5%)
   const total = subtotal + shipping + taxes;
 
-  // Calculate total items count
+  // Calcular número total de itens
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Transform items to the format expected by PagarmeTransparentCheckout
+  // Transformar itens para o formato esperado
   useEffect(() => {
     const transformedCart = items.map((item) => {
       const itemPrice = item.price || 0;
@@ -50,6 +52,13 @@ const CartSummary = () => {
 
     setCart(transformedCart);
   }, [items]);
+
+  // Função para prosseguir para o checkout
+  const handleProceedToCheckout = () => {
+    setProcessing(true);
+    // Redireciona para a página de checkout
+    router.push("/checkout");
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -84,14 +93,23 @@ const CartSummary = () => {
         </div>
       </div>
 
-      {/* Usar o PagarmeTransparentCheckout com os dados do carrinho transformados */}
+      {/* Botão de checkout */}
       {items.length > 0 ? (
         <div>
-          <PagarmeTransparentCheckout
-            cart={cart}
-            buyer={buyer}
-            totalAmount={total}
-          />
+          <button
+            onClick={handleProceedToCheckout}
+            disabled={processing}
+            className="w-full py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors flex items-center justify-center"
+          >
+            {processing ? (
+              "Processando..."
+            ) : (
+              <>
+                Finalizar Compra
+                <ArrowRight size={18} className="ml-2" />
+              </>
+            )}
+          </button>
         </div>
       ) : (
         <button
