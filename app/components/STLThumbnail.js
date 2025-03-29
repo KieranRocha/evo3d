@@ -1,314 +1,117 @@
-// components/STLThumbnail.jsx
-import { useState, useEffect, useRef } from "react";
-import * as THREE from "three";
-import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
-import { useSelector, useDispatch } from "react-redux";
-import { cacheThumbnail } from "../redux/slices/thumbnailSlice";
+"use client";
+// app/components/STLThumbnail.js
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import Image from "next/image";
 
+/**
+ * Componente leve para exibir thumbnails de STL
+ * @param {Object} props - Propriedades do componente
+ * @param {string} props.fileId - ID do arquivo no Redux (opcional)
+ * @param {string} props.dataUrl - Data URL da thumbnail (opcional)
+ * @param {File} props.file - Arquivo STL para gerar thumbnail (opcional)
+ */
 export default function STLThumbnail({
-  url,
-  fileId = null,
-  backgroundColor = "#f5f5f5",
+  fileId,
+  dataUrl,
+  file,
+  className = "w-full h-full",
+  width = 64,
+  height = 64,
+  alt = "STL Preview",
 }) {
-  const canvasRef = useRef(null);
-  const [modelInfo, setModelInfo] = useState({
-    dimensions: { width: 0, height: 0, depth: 0 },
-    triangles: 0,
-    volume: 0,
-    surfaceArea: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [localThumbnail, setLocalThumbnail] = useState(null);
 
-  // Acesso ao Redux
-  const dispatch = useDispatch();
-  const cachedThumbnails = useSelector(
-    (state) => state.thumbnails.cachedThumbnails
+  // Buscar do Redux store
+  const storedFile = useSelector((state) =>
+    fileId ? state.fileStorage.files[fileId] : null
   );
 
-  // Determinar ID para cache (pode ser o fileId explícito ou extraído da url)
-  const thumbnailId =
-    fileId || (url?.includes("/") ? url.split("/").pop().split("?")[0] : url);
-
-  // Verificar se já temos esta thumbnail em cache
-  const cachedThumbnail = thumbnailId ? cachedThumbnails[thumbnailId] : null;
-
-  useEffect(() => {
-    // Se temos uma thumbnail em cache e um canvas válido
-    if (cachedThumbnail && canvasRef.current) {
-      // Carregar a imagem do cache para o canvas
-      const img = new Image();
-      img.onload = () => {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        setIsLoading(false);
-      };
-      img.src = cachedThumbnail;
-      return; // Não prosseguir com o carregamento do modelo
+  // Thumbnail do Redux
+  const storedThumbnail = useSelector((state) => {
+    // Primeiro verificamos se existe no fileStorage
+    if (fileId && state.fileStorage.files[fileId]?.thumbnailDataUrl) {
+      return state.fileStorage.files[fileId].thumbnailDataUrl;
     }
+    // Depois verificamos no thumbnailSlice tradicional
+    if (fileId && state.thumbnails?.cachedThumbnails?.[fileId]) {
+      return state.thumbnails.cachedThumbnails[fileId];
+    }
+    return null;
+  });
 
-    // Se não temos cache, seguir com o carregamento normal
-    if (!url || !canvasRef.current) return;
+  // Escolhe a melhor fonte disponível para a thumbnail
+  const thumbnailSource = dataUrl || storedThumbnail || localThumbnail;
 
-    let renderer, scene, camera;
-    setIsLoading(true);
-    setError(null);
+  // Gerar thumbnail se tiver arquivo e não tiver thumbnail
+  useEffect(() => {
+    // Se já temos uma thumbnail, não precisamos gerar
+    if (thumbnailSource || !file) return;
 
-    // Função para gerar a imagem estática
     const generateThumbnail = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        // Configuração básica
-        const canvas = canvasRef.current;
-        const width = canvas.width;
-        const height = canvas.height;
-
-        // Cria a cena
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(backgroundColor);
-
-        // Cria a câmera
-        camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000);
-
-        // Cria o renderer
-        renderer = new THREE.WebGLRenderer({
-          canvas,
-          antialias: true,
-          preserveDrawingBuffer: true, // Importante para poder salvar a imagem
-        });
-        renderer.setSize(width, height);
-
-        // Adiciona iluminação
-        const ambientLight = new THREE.AmbientLight(0x888888);
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(1, 1, 1);
-        scene.add(directionalLight);
-
-        const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight2.position.set(-1, -1, -1);
-        scene.add(directionalLight2);
-
-        // Função para carregar o STL
-        const loader = new STLLoader();
-        let geometry;
-
-        // Usar o proxy para URLs do Firebase
-        if (url.includes("firebasestorage.googleapis.com")) {
-          const proxyUrl = `/api/proxy-file?url=${encodeURIComponent(url)}`;
-          geometry = await new Promise((resolve, reject) => {
-            loader.load(
-              proxyUrl,
-              (geo) => resolve(geo),
-              undefined,
-              (error) => reject(error)
-            );
-          });
-        } else {
-          // URLs normais carregam diretamente
-          geometry = await new Promise((resolve, reject) => {
-            loader.load(
-              url,
-              (geo) => resolve(geo),
-              undefined,
-              (error) => reject(error)
-            );
-          });
-        }
-
-        // Calcula informações do modelo
-        geometry.computeBoundingBox();
-        const boundingBox = geometry.boundingBox;
-
-        // Dimensões
-        const dimensions = {
-          width: boundingBox.max.x - boundingBox.min.x,
-          height: boundingBox.max.y - boundingBox.min.y,
-          depth: boundingBox.max.z - boundingBox.min.z,
-        };
-
-        // Número de triângulos
-        const triangles = geometry.attributes.position.count / 3;
-
-        // Centraliza geometria
-        const center = new THREE.Vector3();
-        boundingBox.getCenter(center);
-        geometry.translate(-center.x, -center.y, -center.z);
-
-        // Cria o material
-        const material = new THREE.MeshPhongMaterial({
-          color: 0x3f8,
-          shininess: 100,
-        });
-
-        // Cria a mesh e adiciona à cena
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-
-        // Ajusta a câmera para enquadrar o modelo
-        const maxDim = Math.max(
-          dimensions.width,
-          dimensions.height,
-          dimensions.depth
+        // Importar de forma dinâmica para reduzir o impacto no bundle
+        const { generateSTLThumbnail } = await import(
+          "../utils/thumbnailUtils"
         );
-        const dist = maxDim * 2;
-
-        // Posiciona a câmera em um ângulo isométrico (mais agradável)
-        camera.position.set(dist * 0.7, dist * 0.5, dist * 0.7);
-        camera.lookAt(0, 0, 0);
-
-        // Renderiza a cena
-        renderer.render(scene, camera);
-
-        // Calcula volume e área
-        const volume = Math.abs(calculateVolume(geometry)) / 1000; // cm³
-        const surfaceArea = calculateSurfaceArea(geometry);
-
-        // Atualiza informações do modelo
-        setModelInfo({
-          dimensions,
-          triangles,
-          volume: volume.toFixed(2),
-          surfaceArea: surfaceArea.toFixed(2),
-        });
-
-        // Captura a imagem gerada para cache
-        if (thumbnailId) {
-          const dataUrl = canvas.toDataURL("image/png");
-          dispatch(cacheThumbnail({ fileId: thumbnailId, dataUrl }));
-        }
-
-        setIsLoading(false);
-
-        // Cleanup
-        if (geometry) geometry.dispose();
-        if (material) material.dispose();
-        if (mesh && mesh.geometry) mesh.geometry.dispose();
-        if (mesh && mesh.material) mesh.material.dispose();
+        const thumbnail = await generateSTLThumbnail(file, { width, height });
+        setLocalThumbnail(thumbnail);
       } catch (err) {
-        console.error("Erro ao processar STL:", err);
-        setError("Não foi possível gerar a visualização do modelo");
-        setIsLoading(false);
+        console.error("Erro ao gerar thumbnail:", err);
+        setError("Falha ao gerar preview");
       } finally {
-        // Cleanup final
-        if (renderer) renderer.dispose();
+        setLoading(false);
       }
     };
 
-    // Calcula volume aproximado
-    const calculateVolume = (geometry) => {
-      let volume = 0;
-      const pos = geometry.attributes.position;
-      const faces = pos.count / 3;
-
-      for (let i = 0; i < faces; i++) {
-        const idx = i * 3;
-        const p1 = new THREE.Vector3(
-          pos.getX(idx),
-          pos.getY(idx),
-          pos.getZ(idx)
-        );
-        const p2 = new THREE.Vector3(
-          pos.getX(idx + 1),
-          pos.getY(idx + 1),
-          pos.getZ(idx + 1)
-        );
-        const p3 = new THREE.Vector3(
-          pos.getX(idx + 2),
-          pos.getY(idx + 2),
-          pos.getZ(idx + 2)
-        );
-
-        // Calcular contribuição ao volume
-        const tetraVol = p1.dot(p2.clone().cross(p3)) / 6;
-        volume += tetraVol;
-      }
-
-      return volume;
-    };
-
-    // Calcula área de superfície aproximada
-    const calculateSurfaceArea = (geometry) => {
-      let area = 0;
-      const pos = geometry.attributes.position;
-      const faces = pos.count / 3;
-
-      for (let i = 0; i < faces; i++) {
-        const idx = i * 3;
-        const p1 = new THREE.Vector3(
-          pos.getX(idx),
-          pos.getY(idx),
-          pos.getZ(idx)
-        );
-        const p2 = new THREE.Vector3(
-          pos.getX(idx + 1),
-          pos.getY(idx + 1),
-          pos.getZ(idx + 1)
-        );
-        const p3 = new THREE.Vector3(
-          pos.getX(idx + 2),
-          pos.getY(idx + 2),
-          pos.getZ(idx + 2)
-        );
-
-        // Calcular área do triângulo
-        const side1 = new THREE.Vector3().subVectors(p2, p1);
-        const side2 = new THREE.Vector3().subVectors(p3, p1);
-        const cross = new THREE.Vector3().crossVectors(side1, side2);
-        const triangleArea = cross.length() / 2;
-
-        area += triangleArea;
-      }
-
-      return area;
-    };
-
-    // Gera a imagem estática
     generateThumbnail();
+  }, [file, thumbnailSource, width, height]);
 
-    // Cleanup
-    return () => {
-      if (renderer) renderer.dispose();
-      if (scene) {
-        scene.traverse((object) => {
-          if (!object.isMesh) return;
-          if (object.geometry) object.geometry.dispose();
-          if (object.material) {
-            if (Array.isArray(object.material)) {
-              object.material.forEach((material) => material.dispose());
-            } else {
-              object.material.dispose();
-            }
-          }
-        });
-      }
-    };
-  }, [url, thumbnailId, backgroundColor, cachedThumbnail, dispatch]);
+  // Se temos erro, mostramos uma mensagem
+  if (error) {
+    return (
+      <div
+        className={`${className} flex items-center justify-center bg-red-50 text-red-500 text-xs p-1 text-center`}
+      >
+        {error}
+      </div>
+    );
+  }
 
-  return (
-    <div className="space-y-4">
-      <div className="relative w-full">
-        {isLoading && !cachedThumbnail && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-md">
-            <div className="text-gray-500">Gerando visualização...</div>
-          </div>
-        )}
+  // Se estamos carregando, mostramos um indicador
+  if (loading) {
+    return (
+      <div
+        className={`${className} flex items-center justify-center bg-gray-100`}
+      >
+        <div className="animate-pulse bg-gray-200 w-3/4 h-3/4 rounded" />
+      </div>
+    );
+  }
 
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-red-50 rounded-md">
-            <div className="text-red-500">{error}</div>
-          </div>
-        )}
-
-        <canvas
-          ref={canvasRef}
-          width={65}
-          height={65}
-          className="w-full bg-gray-100 rounded-md"
+  // Se temos uma thumbnail, mostramos ela
+  if (thumbnailSource) {
+    return (
+      <div className={className}>
+        <img
+          src={thumbnailSource}
+          alt={alt}
+          className="w-full h-full object-contain"
         />
       </div>
+    );
+  }
+
+  // Fallback quando não temos nada
+  return (
+    <div
+      className={`${className} flex items-center justify-center bg-gray-100 text-gray-400 text-xs`}
+    >
+      STL
     </div>
   );
 }

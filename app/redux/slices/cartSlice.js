@@ -23,6 +23,10 @@ export const cartSlice = createSlice({
           ...newItem,
           quantity: newItem.quantity || 1,
           totalPrice: newItem.price * (newItem.quantity || 1),
+          // Campos para storagem de dados STL
+          stlDataUrl: newItem.stlDataUrl || null,
+          thumbnailDataUrl:
+            newItem.thumbnailDataUrl || newItem.base64Thumbnail || null,
         });
       }
 
@@ -66,29 +70,32 @@ export const cartSlice = createSlice({
         0
       );
     },
-    clearCart: (state) => {
-      // Store the Firebase paths before clearing the cart for cleanup
-      const firebasePaths = state.items
-        .filter((item) => item.firebasePath)
-        .map((item) => item.firebasePath);
+    updateCartItem: (state, action) => {
+      const { id, updates } = action.payload;
+      const itemToUpdate = state.items.find((item) => item.id === id);
 
-      // Save these paths to localStorage for possible cleanup
-      if (firebasePaths.length > 0) {
-        try {
-          // Get existing paths
-          const existingPaths = JSON.parse(
-            localStorage.getItem("firebasePaths") || "[]"
-          );
-          // Combine with new paths
-          const allPaths = [...existingPaths, ...firebasePaths];
-          // Store back to localStorage
-          localStorage.setItem("firebasePaths", JSON.stringify(allPaths));
-        } catch (err) {
-          console.error("Error saving Firebase paths:", err);
+      if (itemToUpdate) {
+        Object.assign(itemToUpdate, updates);
+
+        // Recalcular preço total se a quantidade foi atualizada
+        if (updates.quantity || updates.price) {
+          itemToUpdate.totalPrice =
+            (updates.price || itemToUpdate.price) *
+            (updates.quantity || itemToUpdate.quantity);
         }
       }
 
-      // Clear the cart
+      // Recalcular totais
+      state.totalQuantity = state.items.reduce(
+        (total, item) => total + item.quantity,
+        0
+      );
+      state.totalAmount = state.items.reduce(
+        (total, item) => total + item.totalPrice,
+        0
+      );
+    },
+    clearCart: (state) => {
       state.items = [];
       state.totalQuantity = 0;
       state.totalAmount = 0;
@@ -96,7 +103,12 @@ export const cartSlice = createSlice({
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart } =
-  cartSlice.actions;
+export const {
+  addToCart,
+  removeFromCart,
+  updateQuantity,
+  updateCartItem,
+  clearCart,
+} = cartSlice.actions;
 
 export default cartSlice.reducer;
