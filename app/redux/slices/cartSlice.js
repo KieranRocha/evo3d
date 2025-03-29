@@ -23,9 +23,6 @@ export const cartSlice = createSlice({
           ...newItem,
           quantity: newItem.quantity || 1,
           totalPrice: newItem.price * (newItem.quantity || 1),
-          // Only store thumbnail data, not the STL
-          thumbnailDataUrl:
-            newItem.thumbnailDataUrl || newItem.base64Thumbnail || null,
         });
       }
 
@@ -69,31 +66,6 @@ export const cartSlice = createSlice({
         0
       );
     },
-    updateCartItem: (state, action) => {
-      const { id, updates } = action.payload;
-      const itemToUpdate = state.items.find((item) => item.id === id);
-
-      if (itemToUpdate) {
-        Object.assign(itemToUpdate, updates);
-
-        // Recalculate total price if quantity was updated
-        if (updates.quantity || updates.price) {
-          itemToUpdate.totalPrice =
-            (updates.price || itemToUpdate.price) *
-            (updates.quantity || itemToUpdate.quantity);
-        }
-      }
-
-      // Recalculate totals
-      state.totalQuantity = state.items.reduce(
-        (total, item) => total + item.quantity,
-        0
-      );
-      state.totalAmount = state.items.reduce(
-        (total, item) => total + item.totalPrice,
-        0
-      );
-    },
     clearCart: (state) => {
       state.items = [];
       state.totalQuantity = 0;
@@ -102,12 +74,7 @@ export const cartSlice = createSlice({
   },
 });
 
-export const {
-  addToCart,
-  removeFromCart,
-  updateQuantity,
-  updateCartItem,
-  clearCart,
-} = cartSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, clearCart } =
+  cartSlice.actions;
 
 export default cartSlice.reducer;

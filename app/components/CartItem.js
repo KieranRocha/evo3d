@@ -13,7 +13,7 @@ const CartItem = ({ item }) => {
   const handleRemoveItem = () => {
     dispatch(removeFromCart(item.id));
   };
-  console.log(item);
+
   const handleQuantityChange = (value) => {
     const newQuantity = Math.max(1, value);
     dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
