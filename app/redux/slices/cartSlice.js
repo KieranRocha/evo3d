@@ -23,8 +23,7 @@ export const cartSlice = createSlice({
           ...newItem,
           quantity: newItem.quantity || 1,
           totalPrice: newItem.price * (newItem.quantity || 1),
-          // Campos para storagem de dados STL
-          stlDataUrl: newItem.stlDataUrl || null,
+          // Only store thumbnail data, not the STL
           thumbnailDataUrl:
             newItem.thumbnailDataUrl || newItem.base64Thumbnail || null,
         });
@@ -77,7 +76,7 @@ export const cartSlice = createSlice({
       if (itemToUpdate) {
         Object.assign(itemToUpdate, updates);
 
-        // Recalcular preço total se a quantidade foi atualizada
+        // Recalculate total price if quantity was updated
         if (updates.quantity || updates.price) {
           itemToUpdate.totalPrice =
             (updates.price || itemToUpdate.price) *
@@ -85,7 +84,7 @@ export const cartSlice = createSlice({
         }
       }
 
-      // Recalcular totais
+      // Recalculate totals
       state.totalQuantity = state.items.reduce(
         (total, item) => total + item.quantity,
         0

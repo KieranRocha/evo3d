@@ -7,20 +7,29 @@ import cartReducer from "./slices/cartSlice";
 import authReducer from "./slices/authSlice";
 import thumbnailReducer from "./slices/thumbnailSlice";
 import fileStorageReducer from "./slices/fileStorageSlice";
+import checkoutReducer from "./slices/checkoutSlice";
 
-// Configuração especial para o fileStorage, definindo um tamanho máximo
-// para evitar problemas com o limite de armazenamento do localStorage
+// Configuração para persistir apenas as thumbnails no fileStorage
 const fileStoragePersistConfig = {
   key: "fileStorage",
   storage,
-  // Limite o tamanho máximo e número de arquivos armazenados, se necessário
-  // serialize e deserialize personalizados podem ser necessários para arquivos muito grandes
+  blacklist: ["files"], // Não persistir os arquivos completos
+  transforms: [
+    // Poderíamos adicionar transformers personalizados aqui para filtrar apenas thumbnails
+  ],
+};
+
+// Configuração para persistir thumbnails no thumbnailSlice
+const thumbnailPersistConfig = {
+  key: "thumbnails",
+  storage,
+  // Persistimos as thumbnails para uso no carrinho
 };
 
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["cart", "auth", "thumbnails", "fileStorage"],
+  whitelist: ["cart", "auth", "checkout", "thumbnails", "fileStorage"], // Mantemos thumbnails e fileStorage para obter as thumbnails no carrinho
 };
 
 const rootReducer = combineReducers({
@@ -28,6 +37,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   thumbnails: thumbnailReducer,
   fileStorage: fileStorageReducer,
+  checkout: checkoutReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

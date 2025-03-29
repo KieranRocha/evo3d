@@ -13,27 +13,18 @@ const CartItem = ({ item }) => {
   const handleRemoveItem = () => {
     dispatch(removeFromCart(item.id));
   };
-
+  console.log(item);
   const handleQuantityChange = (value) => {
     const newQuantity = Math.max(1, value);
     dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
   };
 
-  // Generate a unique ID for the thumbnail if not present
-  const thumbnailId = item.id || `cart_item_${Date.now()}`;
-
   return (
-    <div className="bg-white rounded-lg shadow-md border-gray-100 border overflow-hidden mb-4">
+    <div className="bg-white rounded-lg  shadow-md border-gray-100 border overflow-hidden mb-4">
       <div className="flex items-start p-4">
         <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden mr-4 flex-shrink-0">
-          {/* Use STLThumbnail component with base64 data */}
-          {item.url || item.base64Thumbnail ? (
-            <STLThumbnail
-              url={item.url}
-              fileId={thumbnailId}
-              base64Data={item.base64Thumbnail}
-              backgroundColor="#ffffff"
-            />
+          {item.url ? (
+            <STLThumbnail url={item.url} backgroundColor="#ffffff" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
               3D

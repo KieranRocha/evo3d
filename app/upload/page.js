@@ -340,6 +340,9 @@ function StepperUpload() {
   };
 
   // Function to add all configured items to cart
+  // Função atualizada para adicionar itens ao carrinho
+  // a ser incorporada no arquivo app/upload/page.js
+
   const addItemsToCart = () => {
     setAddingToCart(true);
 
@@ -347,17 +350,19 @@ function StepperUpload() {
       const configuredFiles = files.filter((file) => file.isConfigured);
 
       configuredFiles.forEach((file) => {
+        // Não precisamos adicionar o thumbnailDataUrl no item do carrinho,
+        // pois o componente CartItem buscará do Redux usando o fileId
         const cartItem = {
-          id: `${file.firebaseId || file.file.name}_${Date.now()}`, // Create a unique ID using Firebase ID
+          id: `${file.id || file.fileId || file.file.name}_${Date.now()}`,
+          fileId: file.id || file.fileId, // Importante: mantenha a referência ao fileId para buscar a thumbnail do Redux
           name: file.file.name,
-          url: file.url,
           quantity: file.quantity,
           fill: file.fill,
           material: file.material,
           color: file.color,
           price: file.material.calculatedPrice,
           totalPrice: file.material.calculatedPrice * file.quantity,
-          firebasePath: file.firebasePath, // Store Firebase path for reference
+          // Não incluir thumbnailDataUrl diretamente no cartItem
         };
 
         dispatch(addToCart(cartItem));

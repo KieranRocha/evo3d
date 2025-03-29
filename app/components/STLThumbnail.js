@@ -32,9 +32,6 @@ export default function STLThumbnail({
   // Thumbnail do Redux
   const storedThumbnail = useSelector((state) => {
     // Primeiro verificamos se existe no fileStorage
-    if (fileId && state.fileStorage.files[fileId]?.thumbnailDataUrl) {
-      return state.fileStorage.files[fileId].thumbnailDataUrl;
-    }
     // Depois verificamos no thumbnailSlice tradicional
     if (fileId && state.thumbnails?.cachedThumbnails?.[fileId]) {
       return state.thumbnails.cachedThumbnails[fileId];

@@ -1,9 +1,10 @@
 "use client";
 // app/context/UploadContext.js
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { createContext, useContext, useState } from "react";
+import { useDispatch } from "react-redux";
 import { useSTLStorage } from "../hooks/useSTLStorage";
 import { useAuth } from "./AuthContext";
+import { generateSTLThumbnail } from "../utils/thumbnailUtils";
 
 // Create the context
 export const UploadContext = createContext();
@@ -19,46 +20,24 @@ export const UploadProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Usar nosso hook personalizado para armazenamento de STL
+  // Use our custom hook for STL storage
   const {
-    saveSTLFile,
     updateMetadata,
     deleteFile,
-    getAllFiles,
     loading: storageLoading,
     error: storageError,
   } = useSTLStorage();
 
-  // Carregar arquivos do localStorage para inicialização
-  useEffect(() => {
-    const storedFiles = localStorage.getItem("uploadedFiles");
-    if (storedFiles) {
-      try {
-        setUploadedFiles(JSON.parse(storedFiles));
-      } catch (err) {
-        console.error("Erro ao analisar arquivos armazenados:", err);
-        localStorage.removeItem("uploadedFiles");
-      }
-    }
-  }, []);
-
-  // Salvar arquivos no localStorage sempre que mudarem
-  useEffect(() => {
-    if (uploadedFiles.length > 0) {
-      localStorage.setItem("uploadedFiles", JSON.stringify(uploadedFiles));
-    }
-  }, [uploadedFiles]);
-
-  // Atualizar erro do armazenamento se aplicável
-  useEffect(() => {
+  // Update error from storage if applicable
+  React.useEffect(() => {
     if (storageError) {
       setError(storageError);
     }
   }, [storageError]);
 
   /**
-   * Faz upload de arquivos para o Redux
-   * @param {File[]} files - Array de arquivos para upload
+   * Uploads files to be processed
+   * @param {File[]} files - Array of files to upload
    */
   const uploadFiles = async (files) => {
     setLoading(true);
@@ -67,25 +46,39 @@ export const UploadProvider = ({ children }) => {
     try {
       const userId = user?.uid || "anonymous";
       const uploadPromises = Array.from(files).map(async (file) => {
-        // Salvar no Redux e gerar thumbnail automaticamente
-        const fileId = await saveSTLFile(file, {
-          generateThumbnail: true,
-          metadata: {
-            userId,
-            uploadedAt: new Date().toISOString(),
-          },
-        });
+        // Generate a unique ID for the file
+        const fileId = `stl_${Date.now()}_${Math.random()
+          .toString(36)
+          .substring(2, 9)}`;
 
-        // Estrutura normalizada para usar no componente
+        // Generate thumbnail
+        let thumbnailDataUrl = null;
+        try {
+          thumbnailDataUrl = await generateSTLThumbnail(file);
+        } catch (thumbnailError) {
+          console.warn("Unable to generate thumbnail:", thumbnailError);
+          // Continue even without thumbnail
+        }
+
+        // Normalized structure for use in component
         return {
           id: fileId,
-          fileId, // Alias para compatibilidade
-          file,
+          fileId, // Alias for compatibility
+          file, // Keep file reference for processing
+          thumbnailDataUrl,
           quantity: 1,
           fill: null,
           material: null,
           color: null,
           isConfigured: false,
+          metadata: {
+            userId,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            lastModified: file.lastModified,
+            uploadedAt: new Date().toISOString(),
+          },
         };
       });
 
@@ -93,7 +86,7 @@ export const UploadProvider = ({ children }) => {
 
       setUploadedFiles((prev) => [...prev, ...newFiles]);
 
-      // Define o índice do arquivo selecionado, se for o primeiro upload
+      // Set selected file index, if this is the first upload
       if (uploadedFiles.length === 0 && newFiles.length > 0) {
         setSelectedFileIndex(0);
       } else if (newFiles.length > 0) {
@@ -102,7 +95,7 @@ export const UploadProvider = ({ children }) => {
 
       return newFiles;
     } catch (err) {
-      setError("Falha no upload: " + err.message);
+      setError("Upload failed: " + err.message);
       throw err;
     } finally {
       setLoading(false);
@@ -110,70 +103,46 @@ export const UploadProvider = ({ children }) => {
   };
 
   /**
-   * Remove um arquivo da lista
-   * @param {number} index - Índice do arquivo a remover
+   * Removes a file from the list
+   * @param {number} index - Index of the file to remove
    */
   const removeFile = async (index) => {
     try {
-      const fileToRemove = uploadedFiles[index];
-
-      // Remove do Redux se tiver ID
-      if (fileToRemove.id || fileToRemove.fileId) {
-        await deleteFile(fileToRemove.id || fileToRemove.fileId);
-      }
-
-      // Remove do estado local
+      // Remove from local state
       setUploadedFiles((prev) => {
         const newFiles = [...prev];
         newFiles.splice(index, 1);
-
-        // Atualiza localStorage
-        if (newFiles.length === 0) {
-          localStorage.removeItem("uploadedFiles");
-        } else {
-          localStorage.setItem("uploadedFiles", JSON.stringify(newFiles));
-        }
-
         return newFiles;
       });
 
-      // Ajusta o índice selecionado se necessário
+      // Adjust selected index if needed
       if (selectedFileIndex === index) {
         setSelectedFileIndex(uploadedFiles.length > 1 ? 0 : null);
       } else if (selectedFileIndex > index) {
         setSelectedFileIndex(selectedFileIndex - 1);
       }
     } catch (err) {
-      setError("Falha ao remover arquivo: " + err.message);
+      setError("Failed to remove file: " + err.message);
     }
   };
 
   /**
-   * Atualiza a quantidade de um arquivo
-   * @param {number} index - Índice do arquivo a atualizar
-   * @param {number} quantity - Nova quantidade
+   * Updates a file's quantity
+   * @param {number} index - Index of the file to update
+   * @param {number} quantity - New quantity
    */
   const updateQuantity = (index, quantity) => {
     setUploadedFiles((prev) => {
       const newFiles = [...prev];
       newFiles[index].quantity = Math.max(1, quantity);
-
-      // Atualiza métadata no Redux se o arquivo tiver ID
-      if (newFiles[index].id) {
-        updateMetadata(newFiles[index].id, { quantity: Math.max(1, quantity) });
-      }
-
-      // Atualiza localStorage
-      localStorage.setItem("uploadedFiles", JSON.stringify(newFiles));
-
       return newFiles;
     });
   };
 
   /**
-   * Atualiza a configuração de um arquivo
-   * @param {number} index - Índice do arquivo a atualizar
-   * @param {Object} configData - Dados de configuração
+   * Updates a file's configuration
+   * @param {number} index - Index of the file to update
+   * @param {Object} configData - Configuration data
    */
   const updateFileConfig = (index, configData) => {
     if (index < 0 || index >= uploadedFiles.length) return;
@@ -190,44 +159,16 @@ export const UploadProvider = ({ children }) => {
         ),
       };
 
-      // Atualiza metadata no Redux
-      if (newFiles[index].id) {
-        updateMetadata(newFiles[index].id, {
-          ...configData,
-          isConfigured: Boolean(
-            (configData.fill || newFiles[index].fill) &&
-              (configData.material || newFiles[index].material) &&
-              (configData.color || newFiles[index].color)
-          ),
-        });
-      }
-
-      // Atualiza localStorage
-      localStorage.setItem("uploadedFiles", JSON.stringify(newFiles));
-
       return newFiles;
     });
   };
 
   /**
-   * Limpa todos os arquivos
+   * Clears all files
    */
   const clearUploadedFiles = async () => {
-    // Para cada arquivo, remover do Redux
-    for (const file of uploadedFiles) {
-      if (file.id || file.fileId) {
-        try {
-          await deleteFile(file.id || file.fileId);
-        } catch (err) {
-          console.error("Erro ao deletar arquivo:", err);
-        }
-      }
-    }
-
-    // Limpar estado local e localStorage
     setUploadedFiles([]);
     setSelectedFileIndex(null);
-    localStorage.removeItem("uploadedFiles");
   };
 
   const value = {

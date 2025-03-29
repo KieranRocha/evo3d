@@ -2,25 +2,24 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  files: {}, // { fileId: { metadata, stlDataUrl, thumbnailDataUrl } }
+  files: {}, // { fileId: { metadata, thumbnailDataUrl } }
 };
 
 export const fileStorageSlice = createSlice({
   name: "fileStorage",
   initialState,
   reducers: {
-    // Armazena um arquivo STL completo no state
+    // Stores only file metadata and thumbnail in the state
     storeFile: (state, action) => {
-      const { fileId, metadata, stlDataUrl, thumbnailDataUrl } = action.payload;
+      const { fileId, metadata, thumbnailDataUrl } = action.payload;
       state.files[fileId] = {
         metadata,
-        stlDataUrl,
         thumbnailDataUrl,
         storedAt: new Date().toISOString(),
       };
     },
 
-    // Atualiza os metadados de um arquivo
+    // Updates the metadata of a file
     updateFileMetadata: (state, action) => {
       const { fileId, metadata } = action.payload;
       if (state.files[fileId]) {
@@ -32,13 +31,13 @@ export const fileStorageSlice = createSlice({
       }
     },
 
-    // Remove um arquivo do storage
+    // Removes a file from storage
     removeFile: (state, action) => {
       const { fileId } = action.payload;
       delete state.files[fileId];
     },
 
-    // Limpa todos os arquivos
+    // Clears all files
     clearAllFiles: (state) => {
       state.files = {};
     },
@@ -48,12 +47,10 @@ export const fileStorageSlice = createSlice({
 export const { storeFile, updateFileMetadata, removeFile, clearAllFiles } =
   fileStorageSlice.actions;
 
-// Funções helper para conversão de arquivos
-
 /**
- * Converte um arquivo File/Blob para uma Data URL
- * @param {File|Blob} file - O arquivo para converter
- * @returns {Promise<string>} Data URL do arquivo
+ * Converts a File/Blob to a Data URL
+ * @param {File|Blob} file - The file to convert
+ * @returns {Promise<string>} Data URL of the file
  */
 export const fileToDataUrl = (file) => {
   return new Promise((resolve, reject) => {
@@ -65,41 +62,11 @@ export const fileToDataUrl = (file) => {
 };
 
 /**
- * Converte uma Data URL para um Blob
- * @param {string} dataUrl - A Data URL para converter
- * @returns {Blob} O blob resultante
- */
-export const dataUrlToBlob = (dataUrl) => {
-  const arr = dataUrl.split(",");
-  const mime = arr[0].match(/:(.*?);/)[1];
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-
-  return new Blob([u8arr], { type: mime });
-};
-
-/**
- * Converte uma Data URL para um File objeto
- * @param {string} dataUrl - A Data URL para converter
- * @param {string} filename - O nome do arquivo
- * @returns {File} O File objeto resultante
- */
-export const dataUrlToFile = (dataUrl, filename) => {
-  const blob = dataUrlToBlob(dataUrl);
-  return new File([blob], filename, { type: blob.type });
-};
-
-/**
- * Armazena um arquivo STL completo no Redux
- * @param {File} file - O arquivo STL
- * @param {string} thumbnailDataUrl - Data URL da thumbnail (opcional)
- * @param {Object} metadata - Metadados adicionais (opcional)
- * @returns {Promise<Object>} Informações do arquivo armazenado
+ * Stores a STL file's metadata and thumbnail in Redux
+ * @param {File} file - The STL file
+ * @param {string} thumbnailDataUrl - Data URL of the thumbnail (optional)
+ * @param {Object} metadata - Additional metadata (optional)
+ * @returns {Promise<Object>} Information about the stored file
  */
 export const storeSTLFile = async (
   file,
@@ -107,15 +74,12 @@ export const storeSTLFile = async (
   metadata = {}
 ) => {
   try {
-    // Gerar ID único para o arquivo
+    // Generate unique ID for the file
     const fileId = `stl_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 9)}`;
 
-    // Converter o arquivo STL para Data URL
-    const stlDataUrl = await fileToDataUrl(file);
-
-    // Metadados básicos
+    // Basic metadata
     const basicMetadata = {
       name: file.name,
       size: file.size,
@@ -124,15 +88,15 @@ export const storeSTLFile = async (
       ...metadata,
     };
 
-    // Retornar informações para dispatch na action
+    // Return information for dispatch in action
     return {
       fileId,
       metadata: basicMetadata,
-      stlDataUrl,
       thumbnailDataUrl,
+      // Note: Not storing stlDataUrl anymore
     };
   } catch (error) {
-    console.error("Erro ao processar arquivo STL:", error);
+    console.error("Error processing STL file:", error);
     throw error;
   }
 };

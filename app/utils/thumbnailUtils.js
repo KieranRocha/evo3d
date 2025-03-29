@@ -13,7 +13,7 @@ export async function generateSTLThumbnail(file, options = {}) {
     width = 256,
     height = 256,
     backgroundColor = "#f5f5f5",
-    modelColor = "#3f88f6",
+    modelColor = "#f2ff",
     rotation = { x: 0.5, y: 0.5, z: 0 },
   } = options;
 
