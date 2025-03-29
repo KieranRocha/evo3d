@@ -11,7 +11,6 @@ const FileList = ({
   onUpdateQuantity,
   onRemoveFile,
 }) => {
-  console.log(files);
   return (
     <div className="w-full">
       <h2 className="text-xl font-semibold mb-4">
@@ -20,6 +19,12 @@ const FileList = ({
       <div className="space-y-4">
         {[...files].reverse().map((fileData, reversedIndex) => {
           const originalIndex = files.length - 1 - reversedIndex;
+          // Gerar um ID exclusivo para o cache da thumbnail
+          const thumbnailId =
+            fileData.firebaseId ||
+            (fileData.file && fileData.file.name) ||
+            `file-${originalIndex}`;
+
           return (
             <div
               key={originalIndex}
@@ -34,7 +39,11 @@ const FileList = ({
             >
               <div className="flex items-start p-3">
                 <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden mr-3 relative">
-                  <STLThumbnail url={fileData.url} backgroundColor="#ffffff" />
+                  <STLThumbnail
+                    url={fileData.url}
+                    fileId={thumbnailId}
+                    backgroundColor="#ffffff"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">

@@ -1,31 +1,22 @@
 "use client";
 // app/checkout/page.js
-import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useState, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronLeft,
-  CreditCard,
-  Barcode,
-  QrCode,
   ShoppingBag,
-  Truck,
-  Info,
-  User,
-  Check,
-  Mail,
-  Phone,
-  MapPin,
   AlertTriangle,
   Loader,
-  Edit,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 // Components
-import PagarmeTransparentCheckout from "../components/PagarmeTransparentCheckout";
 import CheckoutSteps from "../components/CheckoutSteps";
+import { setCheckoutData } from "../redux/slices/checkoutSlice";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -37,7 +28,14 @@ export default function CheckoutPage() {
     loading: authLoading,
   } = useAuth();
 
-  // Customer information states
+  // Check for empty cart and redirect
+  useEffect(() => {
+    if (items.length === 0 && !authLoading) {
+      router.push("/carrinho");
+    }
+  }, [items, authLoading, router]);
+
+  // Customer States with user profile pre-filling
   const [customer, setCustomer] = useState({
     name: "",
     email: "",
@@ -45,7 +43,8 @@ export default function CheckoutPage() {
     document: "",
   });
 
-  // Address states
+  // Address states with default selection
+  const dispatch = useDispatch();
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
@@ -57,46 +56,57 @@ export default function CheckoutPage() {
     state: "",
     zipCode: "",
   });
-  const [editingAddress, setEditingAddress] = useState(false);
+  const proceedToPayment = () => {
+    const cartData = prepareCartData();
+    const buyerData = prepareBuyerData();
 
-  // Shipping options
+    // Salvar no Redux
+    dispatch(
+      setCheckoutData({
+        cart: cartData,
+        buyer: buyerData,
+        totalAmount: orderSummary.total,
+      })
+    );
+
+    // Navegar para a página de pagamento
+    router.push("/pagamento");
+  };
+  // Shipping options with pricing
   const [shippingOption, setShippingOption] = useState("standard");
   const shippingOptions = [
     { id: "standard", name: "Entrega Padrão", price: 15, days: "5-7" },
     { id: "express", name: "Entrega Expressa", price: 25, days: "2-3" },
   ];
 
-  // Order summary calculations
-  const subtotal = totalAmount;
-  const shipping = shippingOption === "express" ? 25 : 15;
-  const taxes = subtotal * 0.05; // 5% of subtotal for taxes
-  const total = subtotal + shipping + taxes;
+  // Calculated totals using useMemo for performance
+  const orderSummary = useMemo(() => {
+    const subtotal = totalAmount;
+    const shipping = shippingOption === "express" ? 25 : 15;
+    const taxes = subtotal * 0.05; // 5% of subtotal for taxes
+    const total = subtotal + shipping + taxes;
 
-  // Format phone function
+    return {
+      subtotal,
+      shipping,
+      taxes,
+      total,
+    };
+  }, [totalAmount, shippingOption]);
+
+  // Format input values
   const formatPhone = (value) => {
     if (!value) return value;
-
     const phoneNumber = value.replace(/\D/g, "");
-
-    if (phoneNumber.length <= 2) {
-      return `(${phoneNumber}`;
-    }
-    if (phoneNumber.length <= 7) {
+    if (phoneNumber.length <= 2) return `(${phoneNumber}`;
+    if (phoneNumber.length <= 7)
       return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2)}`;
-    }
-    if (phoneNumber.length <= 11) {
-      return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
-        2,
-        7
-      )}-${phoneNumber.slice(7)}`;
-    }
     return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
       2,
       7
     )}-${phoneNumber.slice(7, 11)}`;
   };
 
-  // Format CPF/CNPJ function
   const formatDocument = (value) => {
     if (!value) return value;
     const digits = value.replace(/\D/g, "");
@@ -106,7 +116,7 @@ export default function CheckoutPage() {
         .replace(/^(\d{3})(\d)/, "$1.$2")
         .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
         .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4")
-        .slice(0, 14); // Limita ao formato 999.999.999-99
+        .slice(0, 14);
     } else {
       // CNPJ
       return digits
@@ -114,20 +124,19 @@ export default function CheckoutPage() {
         .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
         .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
         .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5")
-        .slice(0, 18); // Limita ao formato 99.999.999/9999-99
+        .slice(0, 18);
     }
   };
 
-  // Format CEP function
   const formatZipCode = (value) => {
     if (!value) return value;
     return value
       .replace(/\D/g, "")
       .replace(/^(\d{5})(\d)/, "$1-$2")
-      .slice(0, 9); // Limita ao formato 99999-999
+      .slice(0, 9);
   };
 
-  // Handle customer information changes
+  // Handle form changes with formatters
   const handleCustomerChange = (e) => {
     const { name, value } = e.target;
     let formattedValue = value;
@@ -138,13 +147,9 @@ export default function CheckoutPage() {
       formattedValue = formatDocument(value);
     }
 
-    setCustomer({
-      ...customer,
-      [name]: formattedValue,
-    });
+    setCustomer((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
-  // Handle address changes
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
     let formattedValue = value;
@@ -153,72 +158,17 @@ export default function CheckoutPage() {
       formattedValue = formatZipCode(value);
     }
 
-    setNewAddress({
-      ...newAddress,
-      [name]: formattedValue,
-    });
+    setNewAddress((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
-  // Save address function
-  const handleSaveAddress = () => {
-    // In a real application, this would save to the database
-    // For now, we'll just toggle the form visibility
-    setShowAddressForm(false);
-    setEditingAddress(false);
-  };
-
-  // Prepare cart data for payment processor
-  const prepareCartData = () => {
-    return items.map((item) => ({
-      id: item.id,
-      title: item.name,
-      description: `${item.fill?.name || ""} | ${item.material?.name || ""} | ${
-        item.color?.name || ""
-      }`.trim(),
-      price: item.price,
-      quantity: item.quantity,
-      totalPrice: item.totalPrice,
-    }));
-  };
-
-  // Prepare buyer data for payment processor
-  const prepareBuyerData = () => {
-    let defaultAddress =
-      userProfile?.addresses?.find((addr) => addr.isDefault) ||
-      (userProfile?.addresses?.length > 0 ? userProfile.addresses[0] : null);
-
-    // Use selected address if available
-    const selectedAddress = selectedAddressId
-      ? userProfile?.addresses?.find((addr) => addr.id === selectedAddressId)
-      : defaultAddress;
-
-    return {
-      name: customer.name || userProfile?.displayName || "",
-      email: customer.email || userProfile?.email || "",
-      phone: customer.phone || userProfile?.phone || "",
-      document: customer.document || "",
-      address: selectedAddress
-        ? {
-            street: selectedAddress.street,
-            number: selectedAddress.number,
-            complement: selectedAddress.complement || "",
-            neighborhood: selectedAddress.neighborhood || "",
-            city: selectedAddress.city,
-            state: selectedAddress.state,
-            zipCode: selectedAddress.zipCode,
-          }
-        : null,
-    };
-  };
-
-  // Load user data when profile changes
+  // Pre-fill user profile data when available
   useEffect(() => {
     if (userProfile) {
       setCustomer({
         name: userProfile.displayName || "",
         email: userProfile.email || "",
         phone: userProfile.phone || "",
-        document: "",
+        document: userProfile.cpf || "",
       });
 
       if (userProfile.addresses && userProfile.addresses.length > 0) {
@@ -236,14 +186,61 @@ export default function CheckoutPage() {
     }
   }, [userProfile]);
 
-  // Redirect to cart if empty
-  useEffect(() => {
-    if (items.length === 0 && !authLoading) {
-      router.push("/carrinho");
-    }
-  }, [items, authLoading, router]);
+  // Prepare data for Pagarme
+  const prepareCartData = () => {
+    return items.map((item) => ({
+      id: item.id,
+      title: item.name,
+      description: `${item.fill?.name || ""} | ${item.material?.name || ""} | ${
+        item.color?.name || ""
+      }`.trim(),
+      price: item.price,
+      quantity: item.quantity,
+      totalPrice: item.totalPrice,
+    }));
+  };
 
-  // If cart is empty show loading
+  const prepareBuyerData = () => {
+    // Find the default or selected address
+    let defaultAddress =
+      userProfile?.addresses?.find((addr) => addr.isDefault) ||
+      (userProfile?.addresses?.length > 0 ? userProfile.addresses[0] : null);
+
+    const selectedAddress = selectedAddressId
+      ? userProfile?.addresses?.find((addr) => addr.id === selectedAddressId)
+      : defaultAddress;
+
+    // Return formatted buyer data for Pagarme
+    return {
+      name: customer.name || userProfile?.displayName || "",
+      email: customer.email || userProfile?.email || "",
+      phone: customer.phone || userProfile?.phone || "",
+      document: customer.document || "",
+      address: selectedAddress
+        ? {
+            street: selectedAddress.street,
+            number: selectedAddress.number,
+            complement: selectedAddress.complement || "",
+            neighborhood: selectedAddress.neighborhood || "",
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            zipCode: selectedAddress.zipCode,
+          }
+        : showAddressForm
+        ? {
+            street: newAddress.street,
+            number: newAddress.number,
+            complement: newAddress.complement || "",
+            neighborhood: newAddress.neighborhood || "",
+            city: newAddress.city,
+            state: newAddress.state,
+            zipCode: newAddress.zipCode,
+          }
+        : null,
+    };
+  };
+
+  // Show loading if empty cart
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -261,7 +258,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {/* Header with navigation */}
         <div className="mb-6">
           <Link
             href="/carrinho"
@@ -275,21 +272,17 @@ export default function CheckoutPage() {
             Checkout
           </h1>
 
-          {/* Checkout Steps Indicator */}
           <CheckoutSteps currentStep={2} />
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left column: Customer and Shipping Information */}
+          {/* Left column - Customer and shipping information */}
           <div className="w-full lg:w-2/3 space-y-6">
             {/* Customer Information */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  <User size={20} className="inline-block mr-2 text-primary" />
-                  Informações Pessoais
-                </h2>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">
+                Informações Pessoais
+              </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
@@ -317,20 +310,15 @@ export default function CheckoutPage() {
                   >
                     Email <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail size={16} className="text-gray-500" />
-                    </div>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={customer.email}
-                      onChange={handleCustomerChange}
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={customer.email}
+                    onChange={handleCustomerChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
                 </div>
 
                 <div>
@@ -340,21 +328,16 @@ export default function CheckoutPage() {
                   >
                     Telefone <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Phone size={16} className="text-gray-500" />
-                    </div>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={customer.phone}
-                      onChange={handleCustomerChange}
-                      placeholder="(99) 99999-9999"
-                      className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={customer.phone}
+                    onChange={handleCustomerChange}
+                    placeholder="(99) 99999-9999"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                  />
                 </div>
 
                 <div>
@@ -380,12 +363,8 @@ export default function CheckoutPage() {
 
             {/* Shipping Address */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-6 border-b pb-2">
                 <h2 className="text-xl font-semibold text-gray-800">
-                  <MapPin
-                    size={20}
-                    className="inline-block mr-2 text-primary"
-                  />
                   Endereço de Entrega
                 </h2>
                 {!showAddressForm &&
@@ -393,15 +372,14 @@ export default function CheckoutPage() {
                   userProfile?.addresses?.length > 0 && (
                     <button
                       onClick={() => setShowAddressForm(true)}
-                      className="text-primary hover:text-primary-hover transition-colors flex items-center"
+                      className="text-primary hover:text-primary-hover transition-colors"
                     >
-                      <Edit size={16} className="mr-1.5" />
                       Adicionar novo
                     </button>
                   )}
               </div>
 
-              {/* Saved addresses section */}
+              {/* Saved addresses selection */}
               {isAuthenticated &&
                 userProfile?.addresses?.length > 0 &&
                 !showAddressForm && (
@@ -630,32 +608,24 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-end space-x-3 mt-4">
-                    {isAuthenticated && userProfile?.addresses?.length > 0 && (
+                  {userProfile?.addresses?.length > 0 && (
+                    <div className="flex justify-end space-x-3 mt-4">
                       <button
                         onClick={() => setShowAddressForm(false)}
                         className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                       >
                         Cancelar
                       </button>
-                    )}
-                    <button
-                      onClick={handleSaveAddress}
-                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
-                    >
-                      {editingAddress
-                        ? "Atualizar Endereço"
-                        : "Salvar Endereço"}
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+            {/* Payment Section */}
 
             {/* Shipping Options */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                <Truck size={20} className="inline-block mr-2 text-primary" />
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">
                 Opções de Entrega
               </h2>
 
@@ -698,9 +668,12 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              <div className="mt-4 text-sm text-gray-600 flex items-start">
-                <Info size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-                <p>
+              <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <p className="flex items-start">
+                  <AlertTriangle
+                    size={16}
+                    className="mr-2 mt-0.5 flex-shrink-0"
+                  />
                   Os prazos de entrega são estimados e começam a contar a partir
                   da confirmação do pagamento. O tempo de produção das peças 3D
                   pode variar conforme a complexidade dos modelos.
@@ -709,18 +682,13 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Right column: Order Summary and Payment */}
+          {/* Right column - Order summary and payment */}
           <div className="w-full lg:w-1/3 space-y-6">
             {/* Order Summary */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                <ShoppingBag
-                  size={20}
-                  className="inline-block mr-2 text-primary"
-                />
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 border-b pb-2">
                 Resumo do Pedido
               </h2>
-
               <div className="space-y-4 mb-6">
                 <div className="max-h-60 overflow-y-auto pr-2">
                   {items.map((item) => (
@@ -737,7 +705,7 @@ export default function CheckoutPage() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-600">
-                            3D
+                            <ShoppingBag size={24} />
                           </div>
                         )}
                       </div>
@@ -765,23 +733,24 @@ export default function CheckoutPage() {
                 <div className="pt-2 space-y-2">
                   <div className="flex justify-between text-gray-700">
                     <span>Subtotal</span>
-                    <span>R$ {subtotal.toFixed(2)}</span>
+                    <span>R$ {orderSummary.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Frete</span>
-                    <span>R$ {shipping.toFixed(2)}</span>
+                    <span>R$ {orderSummary.shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Impostos</span>
-                    <span>R$ {taxes.toFixed(2)}</span>
+                    <span>R$ {orderSummary.taxes.toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-2 mt-2 flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span className="text-primary">R$ {total.toFixed(2)}</span>
+                    <span className="text-primary">
+                      R$ {orderSummary.total.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
-
               <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-sm text-yellow-800 mb-4">
                 <div className="flex items-start">
                   <AlertTriangle
@@ -795,24 +764,12 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Payment Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                <CreditCard
-                  size={20}
-                  className="inline-block mr-2 text-primary"
-                />
-                Pagamento
-              </h2>
-
-              {/* Payment form will be rendered by PagarmeTransparentCheckout component */}
-              <PagarmeTransparentCheckout
-                cart={prepareCartData()}
-                buyer={prepareBuyerData()}
-                totalAmount={total}
-              />
+              <button
+                className="w-full py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors flex items-center justify-center cursor-pointer"
+                onClick={proceedToPayment}
+              >
+                Continuar <ArrowRight size={18} className="ml-2" />
+              </button>
             </div>
           </div>
         </div>

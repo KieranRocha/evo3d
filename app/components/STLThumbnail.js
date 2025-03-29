@@ -2,8 +2,14 @@
 import { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
+import { useSelector, useDispatch } from "react-redux";
+import { cacheThumbnail } from "../redux/slices/thumbnailSlice";
 
-export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
+export default function STLThumbnail({
+  url,
+  fileId = null,
+  backgroundColor = "#f5f5f5",
+}) {
   const canvasRef = useRef(null);
   const [modelInfo, setModelInfo] = useState({
     dimensions: { width: 0, height: 0, depth: 0 },
@@ -14,7 +20,36 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Acesso ao Redux
+  const dispatch = useDispatch();
+  const cachedThumbnails = useSelector(
+    (state) => state.thumbnails.cachedThumbnails
+  );
+
+  // Determinar ID para cache (pode ser o fileId explícito ou extraído da url)
+  const thumbnailId =
+    fileId || (url?.includes("/") ? url.split("/").pop().split("?")[0] : url);
+
+  // Verificar se já temos esta thumbnail em cache
+  const cachedThumbnail = thumbnailId ? cachedThumbnails[thumbnailId] : null;
+
   useEffect(() => {
+    // Se temos uma thumbnail em cache e um canvas válido
+    if (cachedThumbnail && canvasRef.current) {
+      // Carregar a imagem do cache para o canvas
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        setIsLoading(false);
+      };
+      img.src = cachedThumbnail;
+      return; // Não prosseguir com o carregamento do modelo
+    }
+
+    // Se não temos cache, seguir com o carregamento normal
     if (!url || !canvasRef.current) return;
 
     let renderer, scene, camera;
@@ -31,7 +66,6 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
 
         // Cria a cena
         scene = new THREE.Scene();
-        // Usa a cor de fundo customizada
         scene.background = new THREE.Color(backgroundColor);
 
         // Cria a câmera
@@ -57,18 +91,32 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
         directionalLight2.position.set(-1, -1, -1);
         scene.add(directionalLight2);
 
-        // Carrega o modelo STL
+        // Função para carregar o STL
         const loader = new STLLoader();
+        let geometry;
 
-        // Promisify o carregamento
-        const geometry = await new Promise((resolve, reject) => {
-          loader.load(
-            url,
-            (geometry) => resolve(geometry),
-            undefined,
-            (error) => reject(error)
-          );
-        });
+        // Usar o proxy para URLs do Firebase
+        if (url.includes("firebasestorage.googleapis.com")) {
+          const proxyUrl = `/api/proxy-file?url=${encodeURIComponent(url)}`;
+          geometry = await new Promise((resolve, reject) => {
+            loader.load(
+              proxyUrl,
+              (geo) => resolve(geo),
+              undefined,
+              (error) => reject(error)
+            );
+          });
+        } else {
+          // URLs normais carregam diretamente
+          geometry = await new Promise((resolve, reject) => {
+            loader.load(
+              url,
+              (geo) => resolve(geo),
+              undefined,
+              (error) => reject(error)
+            );
+          });
+        }
 
         // Calcula informações do modelo
         geometry.computeBoundingBox();
@@ -84,7 +132,7 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
         // Número de triângulos
         const triangles = geometry.attributes.position.count / 3;
 
-        // Centraliza a geometria
+        // Centraliza geometria
         const center = new THREE.Vector3();
         boundingBox.getCenter(center);
         geometry.translate(-center.x, -center.y, -center.z);
@@ -92,7 +140,6 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
         // Cria o material
         const material = new THREE.MeshPhongMaterial({
           color: 0x3f8,
-
           shininess: 100,
         });
 
@@ -126,6 +173,12 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
           volume: volume.toFixed(2),
           surfaceArea: surfaceArea.toFixed(2),
         });
+
+        // Captura a imagem gerada para cache
+        if (thumbnailId) {
+          const dataUrl = canvas.toDataURL("image/png");
+          dispatch(cacheThumbnail({ fileId: thumbnailId, dataUrl }));
+        }
 
         setIsLoading(false);
 
@@ -232,12 +285,12 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
         });
       }
     };
-  }, [url, backgroundColor]);
+  }, [url, thumbnailId, backgroundColor, cachedThumbnail, dispatch]);
 
   return (
-    <div className="space-y-4 ">
-      <div className="relative w-full ">
-        {isLoading && (
+    <div className="space-y-4">
+      <div className="relative w-full">
+        {isLoading && !cachedThumbnail && (
           <div className="absolute inset-0 flex items-center justify-center rounded-md">
             <div className="text-gray-500">Gerando visualização...</div>
           </div>
@@ -253,7 +306,7 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
           ref={canvasRef}
           width={65}
           height={65}
-          className="w-full  bg-gray-100 rounded-md "
+          className="w-full bg-gray-100 rounded-md"
         />
       </div>
     </div>

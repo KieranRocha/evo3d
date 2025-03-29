@@ -67,6 +67,28 @@ export const cartSlice = createSlice({
       );
     },
     clearCart: (state) => {
+      // Store the Firebase paths before clearing the cart for cleanup
+      const firebasePaths = state.items
+        .filter((item) => item.firebasePath)
+        .map((item) => item.firebasePath);
+
+      // Save these paths to localStorage for possible cleanup
+      if (firebasePaths.length > 0) {
+        try {
+          // Get existing paths
+          const existingPaths = JSON.parse(
+            localStorage.getItem("firebasePaths") || "[]"
+          );
+          // Combine with new paths
+          const allPaths = [...existingPaths, ...firebasePaths];
+          // Store back to localStorage
+          localStorage.setItem("firebasePaths", JSON.stringify(allPaths));
+        } catch (err) {
+          console.error("Error saving Firebase paths:", err);
+        }
+      }
+
+      // Clear the cart
       state.items = [];
       state.totalQuantity = 0;
       state.totalAmount = 0;

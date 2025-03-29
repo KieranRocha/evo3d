@@ -18,12 +18,27 @@ import ConfigurationStepper from "../components/ConfigurationStepper";
 import { calculateMaterialPrices } from "../components/MaterialPriceCalculator";
 import PrintingBestPractices from "../components/PrintingBestPractices";
 
+// Import the Upload Context
+import { useUpload } from "../context/UploadContext";
+
 function StepperUpload() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const [files, setFiles] = useState([]);
+
+  // Use Upload Context instead of local state for files
+  const {
+    uploadedFiles: files,
+    selectedFileIndex,
+    setSelectedFileIndex,
+    loading: uploadLoading,
+    error: uploadError,
+    uploadFiles,
+    removeFile,
+    updateQuantity,
+    updateFileConfig,
+  } = useUpload();
+
   const [error, setError] = useState(null);
-  const [selectedFileIndex, setSelectedFileIndex] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [materialPrices, setMaterialPrices] = useState({});
   const [loadingMaterialPrices, setLoadingMaterialPrices] = useState(false);
@@ -159,8 +174,8 @@ function StepperUpload() {
     fetchMaterialPrices();
   }, [selectedFileIndex, files]);
 
-  // Função para processar arquivos
-  const processFiles = (selectedFiles) => {
+  // Função para processar arquivos - agora usando o uploadFiles do contexto
+  const processFiles = async (selectedFiles) => {
     // Filtra apenas os arquivos de formatos suportados
     const validFiles = selectedFiles.filter((file) => {
       const ext = file.name.split(".").pop().toLowerCase();
@@ -186,38 +201,21 @@ function StepperUpload() {
       return;
     }
 
-    // Adiciona os novos arquivos à lista com suas URLs e configurações iniciais
-    const newFiles = validFiles.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      quantity: 1,
-      backgroundColor: "#ffffff",
-      fill: null, // Preenchimento selecionado
-      material: null, // Material selecionado
-      color: null, // Cor selecionada
-      isConfigured: false, // Indica se todas as configurações foram definidas
-    }));
-
-    setFiles((prev) => [...prev, ...newFiles]);
-    setSelectedFileIndex(files.length);
-    setCurrentStep(1);
-    // Se for o primeiro arquivo carregado, seleciona-o automaticamente
-    if (files.length === 0 && newFiles.length > 0) {
-      setSelectedFileIndex(0);
+    try {
+      // Use the context's upload function
+      await uploadFiles(validFiles);
+      setError(null);
+    } catch (err) {
+      setError(`Erro ao fazer upload: ${err.message}`);
     }
-
-    setError(null);
   };
 
   // Configuração do dropzone
-  const onDrop = useCallback(
-    (acceptedFiles) => {
-      if (acceptedFiles && acceptedFiles.length > 0) {
-        processFiles(acceptedFiles);
-      }
-    },
-    [files.length]
-  );
+  const onDrop = useCallback(async (acceptedFiles) => {
+    if (acceptedFiles && acceptedFiles.length > 0) {
+      await processFiles(acceptedFiles);
+    }
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -246,47 +244,20 @@ function StepperUpload() {
     multiple: true,
   });
 
-  // Função para remover um arquivo
-  const removeFile = (index) => {
-    setFiles((prev) => {
-      const newFiles = [...prev];
-      URL.revokeObjectURL(newFiles[index].url); // Libera a URL
-      newFiles.splice(index, 1);
-      return newFiles;
-    });
-
-    // Ajusta o índice selecionado se necessário
-    if (selectedFileIndex === index) {
-      setSelectedFileIndex(files.length > 1 ? 0 : null);
-    } else if (selectedFileIndex > index) {
-      setSelectedFileIndex(selectedFileIndex - 1);
-    }
-  };
-
-  // Função para alterar a quantidade
-  const updateQuantity = (index, value) => {
-    setFiles((prev) => {
-      const newFiles = [...prev];
-      newFiles[index].quantity = Math.max(1, value); // Garante que a quantidade mínima seja 1
-      return [...newFiles];
-    });
-
-    // Reset material prices when quantity changes
-    if (selectedFileIndex === index) {
-      setMaterialPrices({});
-    }
+  // Seleciona um arquivo para configuração
+  const selectFile = (index) => {
+    setSelectedFileIndex(index);
+    setCurrentStep(1); // Volta para o primeiro passo ao selecionar um novo arquivo
   };
 
   // Funções para atualizar as configurações do arquivo selecionado
   const updateFill = (fillId) => {
     if (selectedFileIndex === null) return;
 
-    setFiles((prev) => {
-      const newFiles = [...prev];
-      newFiles[selectedFileIndex].fill = fillOptions.find(
-        (fill) => fill.id === fillId
-      );
-      return [...newFiles];
+    const selectedFill = fillOptions.find((fill) => fill.id === fillId);
+
+    updateFileConfig(selectedFileIndex, {
+      fill: selectedFill,
     });
 
     // Reset material prices to trigger new calculation
@@ -300,20 +271,17 @@ function StepperUpload() {
     if (selectedFileIndex === null) return;
     if (!materialPrices[materialId]) return;
 
-    setFiles((prev) => {
-      const newFiles = [...prev];
-      const selectedMaterial = getMaterialOptions().find(
-        (material) => material.id === materialId
-      );
+    const selectedMaterial = getMaterialOptions().find(
+      (material) => material.id === materialId
+    );
 
-      newFiles[selectedFileIndex].material = {
+    updateFileConfig(selectedFileIndex, {
+      material: {
         ...selectedMaterial,
         calculatedPrice: materialPrices[materialId]?.calculatedPrice,
         totalPrice: materialPrices[materialId]?.totalPrice,
         details: materialPrices[materialId]?.details,
-      };
-
-      return [...newFiles];
+      },
     });
 
     // Avança para o próximo passo
@@ -334,20 +302,10 @@ function StepperUpload() {
       return;
     }
 
-    setFiles((prev) => {
-      const newFiles = [...prev];
-      newFiles[selectedFileIndex].color = colorOptions.find(
-        (color) => color.id === colorId
-      );
+    const selectedColor = colorOptions.find((color) => color.id === colorId);
 
-      // Marca como configurado apenas se tiver todas as propriedades
-      newFiles[selectedFileIndex].isConfigured = Boolean(
-        newFiles[selectedFileIndex].fill &&
-          newFiles[selectedFileIndex].material &&
-          newFiles[selectedFileIndex].color
-      );
-
-      return [...newFiles];
+    updateFileConfig(selectedFileIndex, {
+      color: selectedColor,
     });
 
     // Volta para o passo 1 para a próxima peça
@@ -360,12 +318,6 @@ function StepperUpload() {
     if (nextUnconfiguredIndex !== -1) {
       setSelectedFileIndex(nextUnconfiguredIndex);
     }
-  };
-
-  // Seleciona um arquivo para configuração
-  const selectFile = (index) => {
-    setSelectedFileIndex(index);
-    setCurrentStep(1); // Volta para o primeiro passo ao selecionar um novo arquivo
   };
 
   // Verifica se todos os arquivos estão configurados
@@ -396,7 +348,7 @@ function StepperUpload() {
 
       configuredFiles.forEach((file) => {
         const cartItem = {
-          id: `${file.file.name}_${Date.now()}`, // Create a unique ID
+          id: `${file.firebaseId || file.file.name}_${Date.now()}`, // Create a unique ID using Firebase ID
           name: file.file.name,
           url: file.url,
           quantity: file.quantity,
@@ -405,6 +357,7 @@ function StepperUpload() {
           color: file.color,
           price: file.material.calculatedPrice,
           totalPrice: file.material.calculatedPrice * file.quantity,
+          firebasePath: file.firebasePath, // Store Firebase path for reference
         };
 
         dispatch(addToCart(cartItem));
@@ -511,9 +464,16 @@ function StepperUpload() {
               )}
             </div>
 
-            {error && (
+            {(error || uploadError) && (
               <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
-                {error}
+                {error || uploadError}
+              </div>
+            )}
+
+            {uploadLoading && (
+              <div className="mt-4 p-3 bg-blue-100 text-blue-700 rounded-lg flex items-center">
+                <div className="animate-spin mr-2 h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                <span>Fazendo upload dos arquivos...</span>
               </div>
             )}
           </div>
@@ -564,7 +524,7 @@ function StepperUpload() {
                         </div>
                       </div>
 
-                      <div className="mt-6 flex flex-col  gap-4 justify-center">
+                      <div className="mt-6 flex flex-col gap-4 justify-center">
                         <button
                           className="px-8 cursor-pointer py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary-hover transition-colors shadow-md flex items-center justify-center"
                           onClick={addItemsToCart}
@@ -668,8 +628,6 @@ function StepperUpload() {
               </div>
             </div>
           )}
-
-          {/* Action Buttons & Resumo do pedido */}
         </div>
         <PrintingBestPractices />
       </div>

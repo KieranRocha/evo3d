@@ -20,11 +20,16 @@ const CartItem = ({ item }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg  shadow-md border-gray-100 border overflow-hidden mb-4">
+    <div className="bg-white rounded-lg shadow-md border-gray-100 border overflow-hidden mb-4">
       <div className="flex items-start p-4">
         <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden mr-4 flex-shrink-0">
-          {item.url ? (
-            <STLThumbnail url={item.url} backgroundColor="#ffffff" />
+          {/* Support both URL and base64Thumbnail */}
+          {item.url || item.base64Thumbnail ? (
+            <STLThumbnail
+              url={item.url}
+              base64Data={item.base64Thumbnail}
+              backgroundColor="#ffffff"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
               3D

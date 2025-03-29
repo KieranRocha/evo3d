@@ -17,7 +17,7 @@ import {
   Home, // Ícone para endereço
   FileText, // Ícone para documento
 } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { clearCart } from "../redux/slices/cartSlice";
 
 // --- FUNÇÕES DE FORMATAÇÃO (Exemplos Simples) ---
@@ -51,14 +51,10 @@ const formatZipCode = (value) => {
 };
 // -----------------------------------------------
 
-export default function PagarmeTransparentCheckout({
-  cart,
-  buyer, // Espera-se que 'buyer' tenha pelo menos name, email, e talvez phone
-  totalAmount,
-}) {
+export default function PagarmeTransparentCheckout({}) {
   const router = useRouter();
   const dispatch = useDispatch();
-
+  const { cart, buyer, totalAmount } = useSelector((state) => state.checkout);
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
   const [installments, setInstallments] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -90,21 +86,21 @@ export default function PagarmeTransparentCheckout({
 
   // --- useEffect para preencher campos se vierem do buyer (Opcional) ---
   // Se 'buyer' puder conter document/address, você pode preencher os campos
-  // useEffect(() => {
-  //   if (buyer?.document) {
-  //     setCustomerDocument(formatCPF_CNPJ(buyer.document));
-  //   }
-  //   if (buyer?.address) {
-  //     setCustomerAddress({
-  //       street: buyer.address.street || "",
-  //       number: buyer.address.number || "",
-  //       complement: buyer.address.complement || "",
-  //       zipCode: formatZipCode(buyer.address.zipCode || ""),
-  //       city: buyer.address.city || "",
-  //       state: buyer.address.state || "",
-  //     });
-  //   }
-  // }, [buyer]);
+  useEffect(() => {
+    if (buyer?.document) {
+      setCustomerDocument(formatCPF_CNPJ(buyer.document));
+    }
+    if (buyer?.address) {
+      setCustomerAddress({
+        street: buyer.address.street || "",
+        number: buyer.address.number || "",
+        complement: buyer.address.complement || "",
+        zipCode: formatZipCode(buyer.address.zipCode || ""),
+        city: buyer.address.city || "",
+        state: buyer.address.state || "",
+      });
+    }
+  }, [buyer]);
   // -------------------------------------------------------------------
 
   // Gerar opções de parcelas
@@ -280,7 +276,9 @@ export default function PagarmeTransparentCheckout({
     setOrderData(null);
 
     // Format document
-    const cleanDocument = customerDocument.replace(/\D/g, "");
+    const cleanDocument = buyer.document
+      ? buyer.document.replace(/\D/g, "")
+      : "";
     const docType = cleanDocument.length > 11 ? "CNPJ" : "CPF";
 
     // Validate document
@@ -292,7 +290,10 @@ export default function PagarmeTransparentCheckout({
       setLoading(false);
       return;
     }
-    const cleanZipCode = customerAddress.zipCode.replace(/\D/g, "");
+    const cleanZipCode = buyer.address?.zipCode
+      ? buyer.address.zipCode.replace(/\D/g, "")
+      : "";
+
     if (
       paymentMethod === "boleto" &&
       (!cleanZipCode || cleanZipCode.length !== 8)
@@ -304,10 +305,10 @@ export default function PagarmeTransparentCheckout({
     // Basic address validation for boleto
     if (
       paymentMethod === "boleto" &&
-      (!customerAddress.street ||
-        !customerAddress.number ||
-        !customerAddress.city ||
-        !customerAddress.state ||
+      (!buyer.address?.street ||
+        !buyer.address?.number ||
+        !buyer.address?.city ||
+        !buyer.address?.state ||
         !cleanZipCode)
     ) {
       setError(
@@ -319,12 +320,12 @@ export default function PagarmeTransparentCheckout({
     // Basic address validation for card billing address (optional but recommended)
     if (
       paymentMethod === "credit_card" &&
-      (!customerAddress.street ||
-        !customerAddress.number ||
-        !customerAddress.city ||
-        !customerAddress.state ||
-        !customerAddress.zipCode ||
-        customerAddress.zipCode.replace(/\D/g, "").length !== 8)
+      (!buyer.address?.street ||
+        !buyer.address?.number ||
+        !buyer.address?.city ||
+        !buyer.address?.state ||
+        !buyer.address?.zipCode ||
+        buyer.address.zipCode.replace(/\D/g, "").length !== 8)
     ) {
       setError(
         "Endereço de cobrança completo e CEP válido são obrigatórios para Cartão de Crédito."
@@ -561,7 +562,7 @@ export default function PagarmeTransparentCheckout({
 
   // Renderizar formulário de cartão de crédito
   const renderCreditCardForm = () => (
-    <div className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
+    <div className="p-4 border border-gray-200 rounded-lg bg-gray-100 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">
         Dados do Cartão
       </h3>
@@ -959,184 +960,184 @@ export default function PagarmeTransparentCheckout({
   };
 
   // --- NOVO Render Function para Info do Cliente ---
-  const renderCustomerInfoForm = () => (
-    <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 shadow-sm mb-4">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-        <User size={18} className="mr-2 text-gray-600" /> Dados do Pagador
-      </h3>
-      {/* Mostrar aviso apenas se for boleto ou pix */}
-      {(paymentMethod === "boleto" || paymentMethod === "pix") && (
-        <p className="text-xs text-gray-500 mb-4 -mt-3">
-          Necessário para gerar Boleto ou PIX.
-        </p>
-      )}
-      {/* Mostrar aviso se for cartão */}
-      {paymentMethod === "credit_card" && (
-        <p className="text-xs text-gray-500 mb-4 -mt-3">
-          Necessário para o endereço de cobrança do cartão.
-        </p>
-      )}
-      <div className="space-y-4">
-        {/* Documento */}
-        <div>
-          <label
-            htmlFor="customerDocument"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            CPF / CNPJ*
-          </label>
-          <div className="relative">
-            <input
-              type="tel" // Melhor para teclados numéricos
-              id="customerDocument"
-              name="customerDocument"
-              value={customerDocument}
-              onChange={handleCustomerChange}
-              placeholder="000.000.000-00 ou 00.000.000/0000-00"
-              className="w-full pl-10 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-              maxLength="18" // CNPJ formatado
-              required // Adiciona validação HTML básica
-            />
-            <FileText
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={16}
-            />
-          </div>
-        </div>
+  // const renderCustomerInfoForm = () => (
+  //   <div className="p-4 border border-gray-200 rounded-lg bg-white shadow-sm mb-4">
+  //     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+  //       <User size={18} className="mr-2 text-gray-600" /> Dados do Pagador
+  //     </h3>
+  //     {/* Mostrar aviso apenas se for boleto ou pix */}
+  //     {(paymentMethod === "boleto" || paymentMethod === "pix") && (
+  //       <p className="text-xs text-gray-500 mb-4 -mt-3">
+  //         Necessário para gerar Boleto ou PIX.
+  //       </p>
+  //     )}
+  //     {/* Mostrar aviso se for cartão */}
+  //     {paymentMethod === "credit_card" && (
+  //       <p className="text-xs text-gray-500 mb-4 -mt-3">
+  //         Necessário para o endereço de cobrança do cartão.
+  //       </p>
+  //     )}
+  //     <div className="space-y-4">
+  //       {/* Documento */}
+  //       <div>
+  //         <label
+  //           htmlFor="customerDocument"
+  //           className="block text-sm font-medium text-gray-700 mb-1"
+  //         >
+  //           CPF / CNPJ*
+  //         </label>
+  //         <div className="relative">
+  //           <input
+  //             type="tel" // Melhor para teclados numéricos
+  //             id="customerDocument"
+  //             name="customerDocument"
+  //             value={customerDocument}
+  //             onChange={handleCustomerChange}
+  //             placeholder="000.000.000-00 ou 00.000.000/0000-00"
+  //             className="w-full pl-10 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+  //             maxLength="18" // CNPJ formatado
+  //             required // Adiciona validação HTML básica
+  //           />
+  //           <FileText
+  //             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+  //             size={16}
+  //           />
+  //         </div>
+  //       </div>
 
-        {/* Endereço */}
-        <h4 className="text-md font-semibold text-gray-700 pt-2 border-t border-gray-200 flex items-center">
-          <Home size={16} className="mr-2 text-gray-500" /> Endereço de
-          Cobrança*
-        </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* CEP */}
-          <div className="sm:col-span-1">
-            <label
-              htmlFor="zipCode"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              CEP*
-            </label>
-            <input
-              type="tel"
-              id="zipCode"
-              name="zipCode"
-              value={customerAddress.zipCode}
-              onChange={handleCustomerChange}
-              placeholder="00000-000"
-              className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-              maxLength="9"
-              required
-            />
-          </div>
-          {/* Rua */}
-          <div className="sm:col-span-2">
-            <label
-              htmlFor="street"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Rua / Logradouro*
-            </label>
-            <input
-              type="text"
-              id="street"
-              name="street"
-              value={customerAddress.street}
-              onChange={handleCustomerChange}
-              placeholder="Ex: Rua das Flores"
-              className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-              required
-            />
-          </div>
-          {/* Número */}
-          <div className="sm:col-span-1">
-            <label
-              htmlFor="number"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Número*
-            </label>
-            <input
-              type="text"
-              id="number"
-              name="number"
-              value={customerAddress.number}
-              onChange={handleCustomerChange}
-              placeholder="Ex: 123"
-              className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-              required
-            />
-          </div>
-          {/* Complemento */}
-          <div className="sm:col-span-1">
-            <label
-              htmlFor="complement"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Complemento
-            </label>
-            <input
-              type="text"
-              id="complement"
-              name="complement"
-              value={customerAddress.complement}
-              onChange={handleCustomerChange}
-              placeholder="Ex: Apto 101, Bloco B"
-              className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-            />
-          </div>
-          {/* Cidade */}
-          <div className="sm:col-span-1">
-            <label
-              htmlFor="city"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Cidade*
-            </label>
-            <input
-              type="text"
-              id="city"
-              name="city"
-              value={customerAddress.city}
-              onChange={handleCustomerChange}
-              placeholder="Ex: São Paulo"
-              className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-              required
-            />
-          </div>
-          {/* Estado (UF) */}
-          <div className="sm:col-span-1">
-            <label
-              htmlFor="state"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Estado (UF)*
-            </label>
-            <input
-              type="text"
-              id="state"
-              name="state"
-              value={customerAddress.state}
-              onChange={(e) =>
-                handleCustomerChange({
-                  target: {
-                    name: "state",
-                    value: e.target.value.toUpperCase(),
-                  },
-                })
-              } // Forçar maiúsculas
-              placeholder="Ex: SP"
-              className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
-              maxLength="2"
-              required
-            />
-          </div>
-        </div>
-        <p className="text-xs text-gray-500 pt-2">* Campos obrigatórios</p>
-      </div>
-    </div>
-  );
+  //       {/* Endereço */}
+  //       <h4 className="text-md font-semibold text-gray-700 pt-2 border-t border-gray-200 flex items-center">
+  //         <Home size={16} className="mr-2 text-gray-500" /> Endereço de
+  //         Cobrança*
+  //       </h4>
+  //       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  //         {/* CEP */}
+  //         <div className="sm:col-span-1">
+  //           <label
+  //             htmlFor="zipCode"
+  //             className="block text-sm font-medium text-gray-700 mb-1"
+  //           >
+  //             CEP*
+  //           </label>
+  //           <input
+  //             type="tel"
+  //             id="zipCode"
+  //             name="zipCode"
+  //             value={customerAddress.zipCode}
+  //             onChange={handleCustomerChange}
+  //             placeholder="00000-000"
+  //             className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+  //             maxLength="9"
+  //             required
+  //           />
+  //         </div>
+  //         {/* Rua */}
+  //         <div className="sm:col-span-2">
+  //           <label
+  //             htmlFor="street"
+  //             className="block text-sm font-medium text-gray-700 mb-1"
+  //           >
+  //             Rua / Logradouro*
+  //           </label>
+  //           <input
+  //             type="text"
+  //             id="street"
+  //             name="street"
+  //             value={customerAddress.street}
+  //             onChange={handleCustomerChange}
+  //             placeholder="Ex: Rua das Flores"
+  //             className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+  //             required
+  //           />
+  //         </div>
+  //         {/* Número */}
+  //         <div className="sm:col-span-1">
+  //           <label
+  //             htmlFor="number"
+  //             className="block text-sm font-medium text-gray-700 mb-1"
+  //           >
+  //             Número*
+  //           </label>
+  //           <input
+  //             type="text"
+  //             id="number"
+  //             name="number"
+  //             value={customerAddress.number}
+  //             onChange={handleCustomerChange}
+  //             placeholder="Ex: 123"
+  //             className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+  //             required
+  //           />
+  //         </div>
+  //         {/* Complemento */}
+  //         <div className="sm:col-span-1">
+  //           <label
+  //             htmlFor="complement"
+  //             className="block text-sm font-medium text-gray-700 mb-1"
+  //           >
+  //             Complemento
+  //           </label>
+  //           <input
+  //             type="text"
+  //             id="complement"
+  //             name="complement"
+  //             value={customerAddress.complement}
+  //             onChange={handleCustomerChange}
+  //             placeholder="Ex: Apto 101, Bloco B"
+  //             className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+  //           />
+  //         </div>
+  //         {/* Cidade */}
+  //         <div className="sm:col-span-1">
+  //           <label
+  //             htmlFor="city"
+  //             className="block text-sm font-medium text-gray-700 mb-1"
+  //           >
+  //             Cidade*
+  //           </label>
+  //           <input
+  //             type="text"
+  //             id="city"
+  //             name="city"
+  //             value={customerAddress.city}
+  //             onChange={handleCustomerChange}
+  //             placeholder="Ex: São Paulo"
+  //             className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+  //             required
+  //           />
+  //         </div>
+  //         {/* Estado (UF) */}
+  //         <div className="sm:col-span-1">
+  //           <label
+  //             htmlFor="state"
+  //             className="block text-sm font-medium text-gray-700 mb-1"
+  //           >
+  //             Estado (UF)*
+  //           </label>
+  //           <input
+  //             type="text"
+  //             id="state"
+  //             name="state"
+  //             value={customerAddress.state}
+  //             onChange={(e) =>
+  //               handleCustomerChange({
+  //                 target: {
+  //                   name: "state",
+  //                   value: e.target.value.toUpperCase(),
+  //                 },
+  //               })
+  //             } // Forçar maiúsculas
+  //             placeholder="Ex: SP"
+  //             className="w-full py-2 px-3 border border-gray-300 rounded-md focus:ring-primary focus:border-primary text-sm"
+  //             maxLength="2"
+  //             required
+  //           />
+  //         </div>
+  //       </div>
+  //       <p className="text-xs text-gray-500 pt-2">* Campos obrigatórios</p>
+  //     </div>
+  //   </div>
+  // );
   // --------------------------------------------------
 
   // --- Component Return JSX ---
@@ -1180,12 +1181,12 @@ export default function PagarmeTransparentCheckout({
           <h3 className="text-lg font-semibold text-gray-800 mb-3">
             Forma de Pagamento
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 ">
             {/* Credit Card Button */}
             <button
-              className={`p-4 border rounded-lg flex flex-col items-center justify-center transition-all duration-150 ${
+              className={`p-4 border rounded-lg  flex  flex-col  items-center justify-center transition-all duration-150 ${
                 paymentMethod === "credit_card"
-                  ? "border-primary bg-primary-50 ring-2 ring-primary ring-offset-1"
+                  ? "border-primary bg-primary-50 shadow-md "
                   : "border-gray-300 bg-white hover:border-gray-400 hover:bg-gray-50"
               }`}
               onClick={() => {
@@ -1278,12 +1279,12 @@ export default function PagarmeTransparentCheckout({
 
       {/* --- Renderiza Info Cliente (Documento/Endereço) --- */}
       {/* Mostrar se não estiver carregando E se (for cartão E cartão ainda não foi pago) OU (for boleto/pix E ainda não foi gerado) */}
-      {!loading &&
+      {/* {!loading &&
         ((paymentMethod === "credit_card" && !(success && orderData)) ||
           ((paymentMethod === "boleto" || paymentMethod === "pix") &&
             !(success && orderData))) &&
         renderCustomerInfoForm()}
-      {/* -------------------------------------------------- */}
+      -------------------------------------------------- */}
 
       {/* Render Specific Payment Form/Details */}
       {/* Mostrar form do cartão se for cartão E ainda não foi pago */}

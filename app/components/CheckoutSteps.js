@@ -6,12 +6,13 @@ import { CheckCircle } from "lucide-react";
 export default function CheckoutSteps({ currentStep, withLabels = true }) {
   const steps = [
     { id: 1, label: "Carrinho" },
-    { id: 2, label: "Checkout" },
-    { id: 3, label: "Confirmação" },
+    { id: 2, label: "Informações Pessoais" },
+    { id: 3, label: "Pagamento" },
+    { id: 4, label: "Confirmação" },
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto mb-8">
+    <div className="w-full max-w-3xl mx-auto mb-8 mt-4">
       <div className="flex items-center">
         {steps.map((step, index) => (
           <React.Fragment key={step.id}>
@@ -19,7 +20,7 @@ export default function CheckoutSteps({ currentStep, withLabels = true }) {
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 step.id < currentStep
-                  ? "bg-green-500 text-white"
+                  ? "bg-primary text-white"
                   : step.id === currentStep
                   ? "bg-primary text-white"
                   : "bg-gray-200 text-gray-500"
@@ -37,7 +38,7 @@ export default function CheckoutSteps({ currentStep, withLabels = true }) {
               <div
                 className={`h-1 flex-1 ${
                   step.id < currentStep
-                    ? "bg-green-500"
+                    ? "bg-primary"
                     : step.id === currentStep
                     ? "bg-gray-300"
                     : "bg-gray-200"
@@ -56,7 +57,7 @@ export default function CheckoutSteps({ currentStep, withLabels = true }) {
               key={step.id}
               className={`${
                 step.id < currentStep
-                  ? "text-green-600"
+                  ? "text-primary"
                   : step.id === currentStep
                   ? "text-primary font-medium"
                   : "text-gray-500"

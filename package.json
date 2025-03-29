@@ -25,7 +25,8 @@
     "redux-persist": "^6.0.0",
     "redux-thunk": "^3.1.0",
     "three": "^0.174.0",
-    "three-stl-loader": "^1.0.6"
+    "three-stl-loader": "^1.0.6",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

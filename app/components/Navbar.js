@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { ShoppingCart, Menu, X } from "lucide-react";
 import AuthLinks from "./AuthLinks";
+import { initCleanupService } from "../lib/cleanup-service"; // Importa o serviço de limpeza
 
 export default function Navbar() {
   const [prevScrollPos, setPrevScrollPos] = useState(0);
@@ -31,6 +32,13 @@ export default function Navbar() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [prevScrollPos]);
+
+  // Inicializa o serviço de limpeza
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      initCleanupService();
+    }
+  }, []);
 
   // Função para alternar o menu mobile
   const toggleMobileMenu = () => {
