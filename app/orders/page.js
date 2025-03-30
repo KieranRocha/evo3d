@@ -22,6 +22,12 @@ import {
   getDocs,
 } from "firebase/firestore";
 import firebaseApp from "../firebase/firebase";
+import {
+  formatDate,
+  formatOrderStatus,
+  formatPaymentMethod,
+  formatCurrency,
+} from "../utils/common";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -76,40 +82,6 @@ export default function OrdersPage() {
   }, [user]);
 
   // Função para formatar o status do pedido
-  const formatStatus = (status) => {
-    switch (status) {
-      case "pending":
-        return { label: "Pendente", color: "bg-yellow-100 text-yellow-800" };
-      case "processing":
-        return {
-          label: "Em processamento",
-          color: "bg-blue-100 text-blue-800",
-        };
-      case "shipping":
-        return {
-          label: "Em transporte",
-          color: "bg-purple-100 text-purple-800",
-        };
-      case "delivered":
-        return { label: "Entregue", color: "bg-green-100 text-green-800" };
-      case "canceled":
-        return { label: "Cancelado", color: "bg-red-100 text-red-800" };
-      default:
-        return { label: "Desconhecido", color: "bg-gray-100 text-gray-800" };
-    }
-  };
-
-  // Função para formatar data
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "Data não disponível";
-
-    const date = new Date(timestamp.seconds * 1000);
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
 
   return (
     <ProtectedRoute>
@@ -180,10 +152,10 @@ export default function OrdersPage() {
 
                       <div
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          formatStatus(order.status).color
+                          formatOrderStatus(order.status).color
                         }`}
                       >
-                        {formatStatus(order.status).label}
+                        {formatOrderStatus(order.status).label}
                       </div>
 
                       <Link

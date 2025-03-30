@@ -19,36 +19,13 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { clearCart } from "../redux/slices/cartSlice";
+import {
+  formatDocument,
+  formatZipCode,
+  copyToClipboard,
+  formatCurrency,
+} from "../utils/common";
 
-// --- FUNÇÕES DE FORMATAÇÃO (Exemplos Simples) ---
-const formatCPF_CNPJ = (value) => {
-  if (!value) return value;
-  const digits = value.replace(/\D/g, "");
-  if (digits.length <= 11) {
-    // CPF
-    return digits
-      .replace(/^(\d{3})(\d)/, "$1.$2")
-      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4")
-      .slice(0, 14); // Limita ao formato 999.999.999-99
-  } else {
-    // CNPJ
-    return digits
-      .replace(/^(\d{2})(\d)/, "$1.$2")
-      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
-      .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5")
-      .slice(0, 18); // Limita ao formato 99.999.999/9999-99
-  }
-};
-
-const formatZipCode = (value) => {
-  if (!value) return value;
-  return value
-    .replace(/\D/g, "")
-    .replace(/^(\d{5})(\d)/, "$1-$2")
-    .slice(0, 9); // Limita ao formato 99999-999
-};
 // -----------------------------------------------
 
 export default function PagarmeTransparentCheckout({}) {
@@ -88,7 +65,7 @@ export default function PagarmeTransparentCheckout({}) {
   // Se 'buyer' puder conter document/address, você pode preencher os campos
   useEffect(() => {
     if (buyer?.document) {
-      setCustomerDocument(formatCPF_CNPJ(buyer.document));
+      setCustomerDocument(formatDocument(buyer.document));
     }
     if (buyer?.address) {
       setCustomerAddress({
@@ -203,7 +180,7 @@ export default function PagarmeTransparentCheckout({}) {
     const { name, value } = e.target;
 
     if (name === "customerDocument") {
-      setCustomerDocument(formatCPF_CNPJ(value));
+      setCustomerDocument(formatDocument(value));
     } else {
       // Format Zip Code specifically
       const processedValue = name === "zipCode" ? formatZipCode(value) : value;
@@ -237,36 +214,6 @@ export default function PagarmeTransparentCheckout({}) {
   };
 
   // Copiar para área de transferência
-  const copyToClipboard = (text) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => {
-          alert("Código copiado!");
-        })
-        .catch((err) => {
-          console.error("Erro ao copiar:", err);
-          alert("Não foi possível copiar.");
-        });
-    } else {
-      /* Fallback */
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        alert("Código copiado!");
-      } catch (err) {
-        console.error("Erro ao copiar (fallback):", err);
-        alert("Não foi possível copiar.");
-      }
-    }
-  };
 
   // --- Processar Pagamento (MODIFICADO) ---
   const handlePayment = async () => {

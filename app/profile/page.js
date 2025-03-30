@@ -37,6 +37,12 @@ import {
   updateUserAvatar,
 } from "../firebase/auth";
 import ProtectedRoute from "../components/ProtectedRoute";
+import {
+  formatPhone,
+  formatZipCode,
+  formatDate,
+  formatOrderStatus,
+} from "../utils/common";
 
 export default function ProfilePage() {
   const { user, userProfile, loading, isAuthenticated } = useAuth();
@@ -148,28 +154,6 @@ export default function ProfilePage() {
   };
 
   // Função para formatar telefone
-  const formatPhone = (value) => {
-    if (!value) return value;
-
-    const phoneNumber = value.replace(/\D/g, "");
-
-    if (phoneNumber.length <= 2) {
-      return `(${phoneNumber}`;
-    }
-    if (phoneNumber.length <= 7) {
-      return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2)}`;
-    }
-    if (phoneNumber.length <= 11) {
-      return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
-        2,
-        7
-      )}-${phoneNumber.slice(7)}`;
-    }
-    return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
-      2,
-      7
-    )}-${phoneNumber.slice(7, 11)}`;
-  };
 
   const handlePhoneChange = (e) => {
     const formatted = formatPhone(e.target.value);
@@ -283,19 +267,9 @@ export default function ProfilePage() {
   };
 
   // Função para formatar CEP
-  const formatCep = (value) => {
-    if (!value) return value;
-
-    const cep = value.replace(/\D/g, "");
-
-    if (cep.length <= 5) {
-      return cep;
-    }
-    return `${cep.slice(0, 5)}-${cep.slice(5, 8)}`;
-  };
 
   const handleCepChange = (e) => {
-    const formatted = formatCep(e.target.value);
+    const formatted = formatZipCode(e.target.value);
     setNewAddress((prev) => ({ ...prev, zipCode: formatted }));
   };
 
@@ -742,9 +716,7 @@ export default function ProfilePage() {
                         <Calendar size={18} className="text-gray-500 mr-2" />
                         <span>
                           {userProfile?.birthdate
-                            ? new Date(
-                                userProfile.birthdate
-                              ).toLocaleDateString("pt-BR")
+                            ? formatDate(userProfile.birthdate)
                             : "Não informado"}
                         </span>
                       </div>

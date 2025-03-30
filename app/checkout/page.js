@@ -13,7 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-
+import { formatPhone, formatDocument, formatZipCode } from "../utils/common";
 // Components
 import CheckoutSteps from "../components/CheckoutSteps";
 import { setCheckoutData } from "../redux/slices/checkoutSlice";
@@ -95,46 +95,6 @@ export default function CheckoutPage() {
   }, [totalAmount, shippingOption]);
 
   // Format input values
-  const formatPhone = (value) => {
-    if (!value) return value;
-    const phoneNumber = value.replace(/\D/g, "");
-    if (phoneNumber.length <= 2) return `(${phoneNumber}`;
-    if (phoneNumber.length <= 7)
-      return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2)}`;
-    return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
-      2,
-      7
-    )}-${phoneNumber.slice(7, 11)}`;
-  };
-
-  const formatDocument = (value) => {
-    if (!value) return value;
-    const digits = value.replace(/\D/g, "");
-    if (digits.length <= 11) {
-      // CPF
-      return digits
-        .replace(/^(\d{3})(\d)/, "$1.$2")
-        .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4")
-        .slice(0, 14);
-    } else {
-      // CNPJ
-      return digits
-        .replace(/^(\d{2})(\d)/, "$1.$2")
-        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
-        .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, "$1.$2.$3/$4-$5")
-        .slice(0, 18);
-    }
-  };
-
-  const formatZipCode = (value) => {
-    if (!value) return value;
-    return value
-      .replace(/\D/g, "")
-      .replace(/^(\d{5})(\d)/, "$1-$2")
-      .slice(0, 9);
-  };
 
   // Handle form changes with formatters
   const handleCustomerChange = (e) => {
