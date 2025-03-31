@@ -43,6 +43,7 @@ import {
   formatDate,
   formatOrderStatus,
 } from "../utils/common";
+import Image from "next/image";
 
 export default function ProfilePage() {
   const { user, userProfile, loading, isAuthenticated } = useAuth();
@@ -395,13 +396,13 @@ export default function ProfilePage() {
                 <div className="relative mb-4 md:mb-0 md:mr-6">
                   <div className="w-28 h-28 rounded-full bg-white/20 overflow-hidden border-4 border-white/40 flex items-center justify-center">
                     {avatarPreview ? (
-                      <img
+                      <Image
                         src={avatarPreview}
                         alt="Preview"
                         className="w-full h-full object-cover"
                       />
                     ) : userProfile?.photoURL ? (
-                      <img
+                      <Image
                         src={userProfile.photoURL}
                         alt={userProfile.displayName || "Avatar"}
                         className="w-full h-full object-cover"

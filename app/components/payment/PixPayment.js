@@ -2,6 +2,7 @@
 import React from "react";
 import { QrCode, CheckCircle, Copy } from "lucide-react";
 import { copyToClipboard } from "../../utils/common";
+import Image from "next/image";
 
 export default function PixPayment({ success, orderData }) {
   return (
@@ -51,7 +52,7 @@ export default function PixPayment({ success, orderData }) {
             {/* QR Code */}
             <div className="p-2 bg-white rounded-lg border border-gray-300 flex-shrink-0">
               {orderData.pix_qrcode_base64 && (
-                <img
+                <Image
                   src={`data:image/png;base64,${orderData.pix_qrcode_base64}`}
                   alt="QR Code PIX"
                   className="w-36 h-36 md:w-40 md:h-40"

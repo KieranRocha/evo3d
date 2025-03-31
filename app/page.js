@@ -144,18 +144,20 @@ function Home() {
               </p>
             </div>
             <div className="flex gap-5 md:gap-10 items-center justify-center z-10 relative mt-10">
-              <button
-                className="border h-15 w-40 md:w-60 px-4 md:px-8 py-4 rounded-xl bg-primary text-white font-poppins font-medium hover:bg-primary-hover transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              <Link
+                href={"/upload"}
+                className="border flex items-center justify-center   h-15 w-40 md:w-60 px-4 md:px-8 py-4 rounded-xl bg-primary text-white font-poppins font-medium hover:bg-primary-hover transition-colors duration-300"
                 aria-label="Fazer upload de arquivo"
               >
                 Faça o Upload
-              </button>
-              <button
-                className="border h-15 w-40 md:w-60 py-4 rounded-xl font-poppins font-medium hover:bg-gray-50 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+              </Link>
+              <Link
+                href={"/"}
+                className="border flex items-center justify-center h-15 w-40 md:w-60 py-4 rounded-xl font-poppins font-medium hover:bg-gray-100 transition-colors duration-300 "
                 aria-label="Solicitar orçamento"
               >
-                Faça um Orçamento
-              </button>
+                Como Funciona?
+              </Link>
             </div>
           </div>
         </div>

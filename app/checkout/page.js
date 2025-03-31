@@ -17,6 +17,7 @@ import { formatPhone, formatDocument, formatZipCode } from "../utils/common";
 // Components
 import CheckoutSteps from "../components/CheckoutSteps";
 import { setCheckoutData } from "../redux/slices/checkoutSlice";
+import Image from "next/image";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -658,7 +659,7 @@ export default function CheckoutPage() {
                     >
                       <div className="w-16 h-16 bg-gray-200 rounded overflow-hidden mr-3 flex-shrink-0">
                         {item.url ? (
-                          <img
+                          <Image
                             src={item.url}
                             alt={item.name}
                             className="w-full h-full object-cover"

@@ -14,7 +14,6 @@ import MaterialOptions from "../components/MaterialOptions";
 import ColorOptions from "../components/ColorOptions";
 import ConfigurationStepper from "../components/ConfigurationStepper";
 import { calculateMaterialPrices } from "../components/MaterialPriceCalculator";
-import PrintingBestPractices from "../components/PrintingBestPractices";
 
 function StepperUpload() {
   const dispatch = useDispatch();
@@ -642,7 +641,6 @@ function StepperUpload() {
 
           {/* Action Buttons & Resumo do pedido */}
         </div>
-        {/* <PrintingBestPractices /> */}
       </div>
     </div>
   );

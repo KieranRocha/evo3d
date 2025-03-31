@@ -1,5 +1,5 @@
 "use client";
-// app/orders/[id]/page.js
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
@@ -23,7 +23,8 @@ import {
   formatOrderStatus,
   formatPaymentMethod,
   formatCurrency,
-} from "../utils/common";
+} from "../../utils/common";
+import Image from "next/image";
 
 export default function OrderDetailPage() {
   const { id } = useParams();
@@ -35,7 +36,6 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const db = getFirestore(firebaseApp);
 
-  // Função para buscar os detalhes do pedido
   const fetchOrderDetails = async () => {
     if (!user || !id) return;
 
@@ -51,7 +51,6 @@ export default function OrderDetailPage() {
 
       const orderData = orderDoc.data();
 
-      // Verifica se o pedido pertence ao usuário logado
       if (orderData.userId !== user.uid) {
         setError("Você não tem permissão para visualizar este pedido.");
         return;
@@ -71,16 +70,11 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Busca os detalhes do pedido quando o componente for montado
   useEffect(() => {
     if (user && id) {
       fetchOrderDetails();
     }
   }, [user, id]);
-
-  // Função para formatar o status do pedido
-
-  // Função para formatar data
 
   return (
     <ProtectedRoute>
@@ -214,7 +208,7 @@ export default function OrderDetailPage() {
                       >
                         <div className="w-16 h-16 bg-gray-200 rounded overflow-hidden mr-4 flex-shrink-0">
                           {item.imageUrl ? (
-                            <img
+                            <Image
                               src={item.imageUrl}
                               alt={item.name}
                               className="w-full h-full object-cover"

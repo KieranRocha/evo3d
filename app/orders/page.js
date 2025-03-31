@@ -28,6 +28,7 @@ import {
   formatPaymentMethod,
   formatCurrency,
 } from "../utils/common";
+import Image from "next/image";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -179,7 +180,7 @@ export default function OrdersPage() {
                           <div key={index} className="flex items-start">
                             <div className="w-10 h-10 bg-gray-200 rounded overflow-hidden mr-3 flex-shrink-0">
                               {item.imageUrl ? (
-                                <img
+                                <Image
                                   src={item.imageUrl}
                                   alt={item.name}
                                   className="w-full h-full object-cover"
