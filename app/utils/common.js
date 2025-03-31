@@ -1,6 +1,3 @@
-// app/utils/common.js
-// Biblioteca de funções de utilidade reutilizáveis para toda a aplicação
-
 /**
  * Formata um número de telefone para o padrão brasileiro (99) 99999-9999
  * @param {string} value - Valor bruto a ser formatado
@@ -24,7 +21,6 @@ export const formatPhone = (value) => {
     )}-${phoneNumber.slice(7)}`;
   }
 
-  // Se tiver mais de 11 dígitos, trunca
   return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
     2,
     7
@@ -58,14 +54,12 @@ export const formatDocument = (value) => {
   const digits = value.replace(/\D/g, "");
 
   if (digits.length <= 11) {
-    // CPF: 999.999.999-99
     return digits
       .replace(/^(\d{3})(\d)/, "$1.$2")
       .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
       .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4")
       .slice(0, 14);
   } else {
-    // CNPJ: 99.999.999/9999-99
     return digits
       .replace(/^(\d{2})(\d)/, "$1.$2")
       .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
@@ -90,7 +84,6 @@ export const validateCPF = (cpf) => {
   let sum = 0;
   let remainder;
 
-  // Primeiro dígito verificador
   for (let i = 1; i <= 9; i++) {
     sum += parseInt(cleanCPF.substring(i - 1, i)) * (11 - i);
   }
@@ -99,7 +92,6 @@ export const validateCPF = (cpf) => {
   if (remainder === 10 || remainder === 11) remainder = 0;
   if (remainder !== parseInt(cleanCPF.substring(9, 10))) return false;
 
-  // Segundo dígito verificador
   sum = 0;
   for (let i = 1; i <= 10; i++) {
     sum += parseInt(cleanCPF.substring(i - 1, i)) * (12 - i);
@@ -124,14 +116,12 @@ export const validateCNPJ = (cnpj) => {
     return false;
   }
 
-  // Validação dos dígitos verificadores
   let size = cleanCNPJ.length - 2;
   let numbers = cleanCNPJ.substring(0, size);
   const digits = cleanCNPJ.substring(size);
   let sum = 0;
   let pos = size - 7;
 
-  // Primeiro dígito
   for (let i = size; i >= 1; i--) {
     sum += parseInt(numbers.charAt(size - i)) * pos--;
     if (pos < 2) pos = 9;
@@ -140,7 +130,6 @@ export const validateCNPJ = (cnpj) => {
   let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
   if (result !== parseInt(digits.charAt(0))) return false;
 
-  // Segundo dígito
   size += 1;
   numbers = cleanCNPJ.substring(0, size);
   sum = 0;
@@ -200,13 +189,10 @@ export const formatCurrency = (value, decimals = 2) => {
 export const formatDate = (date, options = {}) => {
   if (!date) return "";
 
-  // Converter para objeto Date se for um timestamp (segundos ou milissegundos)
   let dateObj = date;
   if (typeof date === "number") {
-    // Verifica se é timestamp em segundos
     dateObj = date < 10000000000 ? new Date(date * 1000) : new Date(date);
   } else if (date.seconds) {
-    // Formato típico do Firestore
     dateObj = new Date(date.seconds * 1000);
   }
 
@@ -299,7 +285,6 @@ export const copyToClipboard = async (text) => {
       await navigator.clipboard.writeText(text);
       return true;
     } else {
-      // Fallback para navegadores mais antigos
       const textarea = document.createElement("textarea");
       textarea.value = text;
       textarea.style.position = "fixed";
@@ -446,7 +431,6 @@ export const getChangedProperties = (original, updated) => {
   const changes = {};
 
   Object.keys(updated).forEach((key) => {
-    // Se a propriedade foi alterada
     if (JSON.stringify(original[key]) !== JSON.stringify(updated[key])) {
       changes[key] = updated[key];
     }
@@ -470,7 +454,6 @@ export const calculateAge = (birthdate) => {
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
 
-  // Ajusta a idade se ainda não fez aniversário neste ano
   if (
     monthDiff < 0 ||
     (monthDiff === 0 && today.getDate() < birthDate.getDate())
@@ -498,13 +481,11 @@ export const calculateInstallment = (
   }
 
   if (interestRate === 0) {
-    // Sem juros
     return {
       installmentValue: totalAmount / installments,
       totalWithInterest: totalAmount,
     };
   } else {
-    // Com juros (implementação simplificada de juros compostos)
     const rate = interestRate / 100;
     const totalWithInterest = totalAmount * Math.pow(1 + rate, installments);
     return {

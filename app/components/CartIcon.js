@@ -10,10 +10,8 @@ export default function CartIcon() {
   const [isHighlighted, setIsHighlighted] = useState(false);
   const [prevQuantity, setPrevQuantity] = useState(totalQuantity);
 
-  // Efeito para destacar o ícone quando o número de itens muda
   useEffect(() => {
     if (totalQuantity > prevQuantity) {
-      // Destaca o ícone apenas se o número aumentou
       setIsHighlighted(true);
       const timer = setTimeout(() => {
         setIsHighlighted(false);

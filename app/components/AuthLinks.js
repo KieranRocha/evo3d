@@ -1,5 +1,5 @@
 "use client";
-// app/components/AuthLinks.js
+
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,6 @@ export default function AuthLinks() {
   const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
 
-  // Função para fazer logout
   const handleLogout = async () => {
     setLoggingOut(true);
 
@@ -28,7 +27,6 @@ export default function AuthLinks() {
     }
   };
 
-  // Se estiver carregando, mostra um indicador de loading
   if (loading) {
     return (
       <div className="w-8 h-8 flex items-center justify-center">
@@ -37,7 +35,6 @@ export default function AuthLinks() {
     );
   }
 
-  // Se não estiver autenticado, mostra os links de login e cadastro
   if (!isAuthenticated) {
     return (
       <>
@@ -57,7 +54,6 @@ export default function AuthLinks() {
     );
   }
 
-  // Se estiver autenticado, mostra o menu de usuário
   return (
     <div className="relative">
       <button

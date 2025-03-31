@@ -1,4 +1,3 @@
-// app/components/CartSummary.js
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -17,16 +16,13 @@ const CartSummary = () => {
     email: "cliente@example.com",
   });
 
-  // Cálculos de valores
   const subtotal = totalAmount;
-  const shipping = subtotal > 0 ? 15.0 : 0; // Custo padrão de envio
-  const taxes = subtotal * 0.05; // Taxa exemplo (5%)
+  const shipping = subtotal > 0 ? 15.0 : 0;
+  const taxes = subtotal * 0.05;
   const total = subtotal + shipping + taxes;
 
-  // Calcular número total de itens
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Transformar itens para o formato esperado
   useEffect(() => {
     const transformedCart = items.map((item) => {
       const itemPrice = item.price || 0;
@@ -53,10 +49,9 @@ const CartSummary = () => {
     setCart(transformedCart);
   }, [items]);
 
-  // Função para prosseguir para o checkout
   const handleProceedToCheckout = () => {
     setProcessing(true);
-    // Redireciona para a página de checkout
+
     router.push("/checkout");
   };
 

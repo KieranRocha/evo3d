@@ -1,5 +1,5 @@
 "use client";
-// app/register/page.js
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -40,7 +40,6 @@ export default function RegisterPage() {
 
   const router = useRouter();
 
-  // Função para avaliar a força da senha
   useEffect(() => {
     if (!formData.password) {
       setPasswordStrength(0);
@@ -51,35 +50,30 @@ export default function RegisterPage() {
     let strength = 0;
     let feedback = [];
 
-    // Tamanho da senha
     if (formData.password.length >= 8) {
       strength += 1;
     } else {
       feedback.push("A senha deve ter pelo menos 8 caracteres");
     }
 
-    // Verifica se a senha contém letras maiúsculas
     if (/[A-Z]/.test(formData.password)) {
       strength += 1;
     } else {
       feedback.push("Inclua pelo menos uma letra maiúscula");
     }
 
-    // Verifica se a senha contém letras minúsculas
     if (/[a-z]/.test(formData.password)) {
       strength += 1;
     } else {
       feedback.push("Inclua pelo menos uma letra minúscula");
     }
 
-    // Verifica se a senha contém números
     if (/[0-9]/.test(formData.password)) {
       strength += 1;
     } else {
       feedback.push("Inclua pelo menos um número");
     }
 
-    // Verifica se a senha contém caracteres especiais
     if (/[^A-Za-z0-9]/.test(formData.password)) {
       strength += 1;
     } else {
@@ -90,7 +84,6 @@ export default function RegisterPage() {
     setPasswordFeedback(feedback.join(". "));
   }, [formData.password]);
 
-  // Função de manipulação de alterações nos campos do formulário
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -98,7 +91,6 @@ export default function RegisterPage() {
       [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Limpa o erro do campo quando o usuário começa a digitar
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -107,28 +99,23 @@ export default function RegisterPage() {
     }
   };
 
-  // Função de validação do formulário
   const validateForm = () => {
     const newErrors = {};
 
-    // Validação do nome
     if (!formData.name.trim()) {
       newErrors.name = "Nome é obrigatório";
     }
 
-    // Validação de email
     if (!formData.email) {
       newErrors.email = "Email é obrigatório";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Email inválido";
     }
 
-    // Validação de telefone (opcional)
     if (formData.phone && !/^\(\d{2}\) \d{4,5}-\d{4}$/.test(formData.phone)) {
       newErrors.phone = "Formato inválido. Use (99) 99999-9999";
     }
 
-    // Validação de data de nascimento (opcional)
     if (formData.birthdate) {
       const birthdate = new Date(formData.birthdate);
       const today = new Date();
@@ -143,7 +130,6 @@ export default function RegisterPage() {
       }
     }
 
-    // Validação de senha
     if (!formData.password) {
       newErrors.password = "Senha é obrigatória";
     } else if (formData.password.length < 8) {
@@ -152,14 +138,12 @@ export default function RegisterPage() {
       newErrors.password = "A senha é muito fraca";
     }
 
-    // Validação de confirmação de senha
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Confirme sua senha";
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "As senhas não coincidem";
     }
 
-    // Validação dos termos
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = "Você deve aceitar os termos e condições";
     }
@@ -168,7 +152,6 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Função para lidar com o envio do formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
     setRegisterError(null);
@@ -187,14 +170,12 @@ export default function RegisterPage() {
       );
       setRegisterSuccess(true);
 
-      // Após 3 segundos, redireciona para a página de login
       setTimeout(() => {
         router.push("/login");
       }, 3000);
     } catch (error) {
       console.error("Erro ao registrar:", error);
 
-      // Mapeia os códigos de erro do Firebase para mensagens amigáveis
       const errorMessage = getErrorMessage(error.code);
       setRegisterError(errorMessage);
     } finally {
@@ -202,7 +183,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Formatar telefone como (99) 99999-9999
   const formatPhone = (value) => {
     if (!value) return value;
 
@@ -235,7 +215,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Função para mapear códigos de erro para mensagens amigáveis
   const getErrorMessage = (errorCode) => {
     switch (errorCode) {
       case "auth/email-already-in-use":
@@ -253,7 +232,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Caso o registro tenha sido bem-sucedido, mostra mensagem de sucesso
   if (registerSuccess) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

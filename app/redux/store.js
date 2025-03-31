@@ -1,4 +1,3 @@
-// app/redux/store.js - Updated with authReducer
 import { configureStore } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
@@ -10,7 +9,7 @@ import checkoutSlice from "./slices/checkoutSlice";
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["cart", "auth", "checkout"], // cart and auth will be persisted
+  whitelist: ["cart", "auth", "checkout"],
 };
 
 const rootReducer = combineReducers({

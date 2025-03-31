@@ -1,4 +1,3 @@
-// app/components/PagarmeCheckout.js
 "use client";
 
 import { ShoppingBag } from "lucide-react";
@@ -18,7 +17,6 @@ export default function PagarmeCheckout({ cart, buyer }) {
         buyer,
       });
 
-      // Chamar a API para criar o pedido no Pagar.me
       const response = await fetch("/api/create-order", {
         method: "POST",
         headers: {
@@ -39,7 +37,6 @@ export default function PagarmeCheckout({ cart, buyer }) {
       const data = await response.json();
       console.log("Pedido criado:", data);
 
-      // Redirecionar para a página de checkout do Pagar.me
       window.location.href = data.checkout_url;
     } catch (err) {
       console.error("Erro durante o checkout:", err);

@@ -1,4 +1,3 @@
-// app/upload/page.js
 "use client";
 
 import React, { useCallback, useState, useEffect } from "react";
@@ -9,7 +8,6 @@ import { addToCart } from "../redux/slices/cartSlice";
 import { useRouter } from "next/navigation";
 import PrintTimeEstimator from "../components/PrintTimeEstimator";
 
-// Import our separated components
 import FileList from "../components/FileList";
 import FillOptions from "../components/FillOptions";
 import MaterialOptions from "../components/MaterialOptions";
@@ -30,7 +28,6 @@ function StepperUpload() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
-  // Dados para as opções
   const fillOptions = [
     {
       id: "solid",
@@ -64,41 +61,39 @@ function StepperUpload() {
     },
   ];
 
-  // Material options with base information
   const baseMaterialOptions = [
     {
       id: "pla",
       name: "PLA",
       description: "Biodegradável, fácil de imprimir",
-      basePrice: 120, // R$ por kg
+      basePrice: 120,
     },
     {
       id: "abs",
       name: "ABS",
       description: "Resistente a impactos, durável",
-      basePrice: 100, // R$ por kg
+      basePrice: 100,
     },
     {
       id: "petg",
       name: "PETG",
       description: "Resistente a químicos, flexível",
-      basePrice: 130, // R$ por kg
+      basePrice: 130,
     },
     {
       id: "tpu",
       name: "TPU",
       description: "Flexível, emborrachado",
-      basePrice: 180, // R$ por kg
+      basePrice: 180,
     },
     {
       id: "nylon",
       name: "Nylon",
       description: "Alta resistência mecânica",
-      basePrice: 250, // R$ por kg
+      basePrice: 250,
     },
   ];
 
-  // Generate material options with calculated prices
   const getMaterialOptions = () => {
     return baseMaterialOptions.map((material) => ({
       ...material,
@@ -117,7 +112,6 @@ function StepperUpload() {
     { id: "yellow", name: "Amarelo", value: "#ebe534", price: 1.1 },
   ];
 
-  // Reset cart confirmation message after 3 seconds
   useEffect(() => {
     if (addedToCart) {
       const timer = setTimeout(() => {
@@ -128,7 +122,6 @@ function StepperUpload() {
     }
   }, [addedToCart]);
 
-  // Fetch material prices when a file is selected and fill option is chosen
   useEffect(() => {
     const fetchMaterialPrices = async () => {
       if (
@@ -159,9 +152,7 @@ function StepperUpload() {
     fetchMaterialPrices();
   }, [selectedFileIndex, files]);
 
-  // Função para processar arquivos
   const processFiles = (selectedFiles) => {
-    // Filtra apenas os arquivos de formatos suportados
     const validFiles = selectedFiles.filter((file) => {
       const ext = file.name.split(".").pop().toLowerCase();
       return [
@@ -186,22 +177,21 @@ function StepperUpload() {
       return;
     }
 
-    // Adiciona os novos arquivos à lista com suas URLs e configurações iniciais
     const newFiles = validFiles.map((file) => ({
       file,
       url: URL.createObjectURL(file),
       quantity: 1,
       backgroundColor: "#ffffff",
-      fill: null, // Preenchimento selecionado
-      material: null, // Material selecionado
-      color: null, // Cor selecionada
-      isConfigured: false, // Indica se todas as configurações foram definidas
+      fill: null,
+      material: null,
+      color: null,
+      isConfigured: false,
     }));
 
     setFiles((prev) => [...prev, ...newFiles]);
     setSelectedFileIndex(files.length);
     setCurrentStep(1);
-    // Se for o primeiro arquivo carregado, seleciona-o automaticamente
+
     if (files.length === 0 && newFiles.length > 0) {
       setSelectedFileIndex(0);
     }
@@ -209,7 +199,6 @@ function StepperUpload() {
     setError(null);
   };
 
-  // Configuração do dropzone
   const onDrop = useCallback(
     (acceptedFiles) => {
       if (acceptedFiles && acceptedFiles.length > 0) {
@@ -246,16 +235,14 @@ function StepperUpload() {
     multiple: true,
   });
 
-  // Função para remover um arquivo
   const removeFile = (index) => {
     setFiles((prev) => {
       const newFiles = [...prev];
-      URL.revokeObjectURL(newFiles[index].url); // Libera a URL
+      URL.revokeObjectURL(newFiles[index].url);
       newFiles.splice(index, 1);
       return newFiles;
     });
 
-    // Ajusta o índice selecionado se necessário
     if (selectedFileIndex === index) {
       setSelectedFileIndex(files.length > 1 ? 0 : null);
     } else if (selectedFileIndex > index) {
@@ -263,21 +250,18 @@ function StepperUpload() {
     }
   };
 
-  // Função para alterar a quantidade
   const updateQuantity = (index, value) => {
     setFiles((prev) => {
       const newFiles = [...prev];
-      newFiles[index].quantity = Math.max(1, value); // Garante que a quantidade mínima seja 1
+      newFiles[index].quantity = Math.max(1, value);
       return [...newFiles];
     });
 
-    // Reset material prices when quantity changes
     if (selectedFileIndex === index) {
       setMaterialPrices({});
     }
   };
 
-  // Funções para atualizar as configurações do arquivo selecionado
   const updateFill = (fillId) => {
     if (selectedFileIndex === null) return;
 
@@ -289,10 +273,8 @@ function StepperUpload() {
       return [...newFiles];
     });
 
-    // Reset material prices to trigger new calculation
     setMaterialPrices({});
 
-    // Avança para o próximo passo
     setCurrentStep(2);
   };
 
@@ -316,16 +298,13 @@ function StepperUpload() {
       return [...newFiles];
     });
 
-    // Avança para o próximo passo
     setCurrentStep(3);
   };
 
   const updateColor = (colorId) => {
     if (selectedFileIndex === null) return;
 
-    // Verifica se tem preenchimento e material selecionados
     if (!files[selectedFileIndex].fill || !files[selectedFileIndex].material) {
-      // Determina para qual etapa voltar
       if (!files[selectedFileIndex].fill) {
         setCurrentStep(1);
       } else {
@@ -340,7 +319,6 @@ function StepperUpload() {
         (color) => color.id === colorId
       );
 
-      // Marca como configurado apenas se tiver todas as propriedades
       newFiles[selectedFileIndex].isConfigured = Boolean(
         newFiles[selectedFileIndex].fill &&
           newFiles[selectedFileIndex].material &&
@@ -350,10 +328,8 @@ function StepperUpload() {
       return [...newFiles];
     });
 
-    // Volta para o passo 1 para a próxima peça
     setCurrentStep(1);
 
-    // Encontra o próximo arquivo não configurado
     const nextUnconfiguredIndex = files.findIndex(
       (file, index) => index !== selectedFileIndex && !file.isConfigured
     );
@@ -362,17 +338,14 @@ function StepperUpload() {
     }
   };
 
-  // Seleciona um arquivo para configuração
   const selectFile = (index) => {
     setSelectedFileIndex(index);
-    setCurrentStep(1); // Volta para o primeiro passo ao selecionar um novo arquivo
+    setCurrentStep(1);
   };
 
-  // Verifica se todos os arquivos estão configurados
   const allFilesConfigured =
     files.length > 0 && files.every((file) => file.isConfigured);
 
-  // Calcula o custo estimado total
   const calculateEstimatedCost = () => {
     let totalCost = 0;
 
@@ -387,7 +360,6 @@ function StepperUpload() {
     return totalCost.toFixed(2);
   };
 
-  // Function to add all configured items to cart
   const addItemsToCart = () => {
     setAddingToCart(true);
 
@@ -396,7 +368,7 @@ function StepperUpload() {
 
       configuredFiles.forEach((file) => {
         const cartItem = {
-          id: `${file.file.name}_${Date.now()}`, // Create a unique ID
+          id: `${file.file.name}_${Date.now()}`,
           name: file.file.name,
           url: file.url,
           quantity: file.quantity,
@@ -421,7 +393,6 @@ function StepperUpload() {
     }
   };
 
-  // Function to process payment directly
   const processPayment = async () => {
     try {
       const totalCost = calculateEstimatedCost();

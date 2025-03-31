@@ -1,5 +1,5 @@
 "use client";
-// app/redux/slices/authSlice.js
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   registerUser,
@@ -9,7 +9,6 @@ import {
   getUserProfile,
 } from "../../firebase/auth";
 
-// Ação assíncrona para registro de usuário
 export const register = createAsyncThunk(
   "auth/register",
   async ({ email, password, displayName }, { rejectWithValue }) => {
@@ -22,14 +21,12 @@ export const register = createAsyncThunk(
   }
 );
 
-// Ação assíncrona para login de usuário
 export const login = createAsyncThunk(
   "auth/login",
   async ({ email, password }, { rejectWithValue }) => {
     try {
       const user = await loginUser(email, password);
 
-      // Obter dados do perfil do usuário
       if (user) {
         const userProfile = await getUserProfile(user.uid);
         return { user, userProfile };
@@ -42,7 +39,6 @@ export const login = createAsyncThunk(
   }
 );
 
-// Ação assíncrona para logout de usuário
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
@@ -55,7 +51,6 @@ export const logout = createAsyncThunk(
   }
 );
 
-// Ação assíncrona para carregar o usuário atual
 export const loadCurrentUser = createAsyncThunk(
   "auth/loadCurrentUser",
   async (_, { rejectWithValue }) => {
@@ -74,7 +69,6 @@ export const loadCurrentUser = createAsyncThunk(
   }
 );
 
-// Estado inicial
 const initialState = {
   user: null,
   userProfile: null,
@@ -83,7 +77,6 @@ const initialState = {
   isAuthenticated: false,
 };
 
-// Slice de autenticação
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -93,7 +86,6 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Registro
     builder
       .addCase(register.pending, (state) => {
         state.loading = true;
@@ -109,7 +101,6 @@ const authSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Login
     builder
       .addCase(login.pending, (state) => {
         state.loading = true;
@@ -126,7 +117,6 @@ const authSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Logout
     builder
       .addCase(logout.pending, (state) => {
         state.loading = true;
@@ -142,7 +132,6 @@ const authSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Carregar usuário atual
     builder
       .addCase(loadCurrentUser.pending, (state) => {
         state.loading = true;

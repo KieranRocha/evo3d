@@ -1,5 +1,5 @@
 "use client";
-// app/profile/page.js
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -48,10 +48,8 @@ export default function ProfilePage() {
   const { user, userProfile, loading, isAuthenticated } = useAuth();
   const router = useRouter();
 
-  // Estados para gerenciar tabs
   const [activeTab, setActiveTab] = useState("personal");
 
-  // Estados para dados do perfil
   const [profileData, setProfileData] = useState({
     displayName: "",
     email: "",
@@ -60,13 +58,11 @@ export default function ProfilePage() {
     cpf: "",
   });
 
-  // Estados para edição de perfil
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [profileSuccess, setProfileSuccess] = useState(null);
 
-  // Estados para endereços
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [newAddress, setNewAddress] = useState({
     street: "",
@@ -83,20 +79,16 @@ export default function ProfilePage() {
   const [deletingAddress, setDeletingAddress] = useState(null);
   const [settingDefaultAddress, setSettingDefaultAddress] = useState(null);
 
-  // Estados para carregamento de avatar
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState(null);
 
-  // Estado para logout
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Estado para pedidos recentes
   const [recentOrders, setRecentOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
 
-  // Carregar dados do perfil quando disponíveis
   useEffect(() => {
     if (userProfile && !isEditingProfile) {
       setProfileData({
@@ -109,10 +101,8 @@ export default function ProfilePage() {
     }
   }, [userProfile, isEditingProfile]);
 
-  // Buscar pedidos recentes
   useEffect(() => {
     if (user) {
-      // Simulação de pedidos recentes - em produção, isso viria do Firestore
       setTimeout(() => {
         setRecentOrders([
           {
@@ -135,7 +125,6 @@ export default function ProfilePage() {
     }
   }, [user]);
 
-  // Função para lidar com mudanças nos campos do formulário de perfil
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfileData((prev) => ({
@@ -144,7 +133,6 @@ export default function ProfilePage() {
     }));
   };
 
-  // Função para lidar com mudanças nos campos do formulário de endereço
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
     setNewAddress((prev) => ({
@@ -153,20 +141,16 @@ export default function ProfilePage() {
     }));
   };
 
-  // Função para formatar telefone
-
   const handlePhoneChange = (e) => {
     const formatted = formatPhone(e.target.value);
     setProfileData((prev) => ({ ...prev, phone: formatted }));
   };
 
-  // Função para manipular o upload de avatar
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setAvatarFile(file);
 
-      // Criar preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result);
@@ -175,7 +159,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Função para fazer upload do avatar
   const handleAvatarUpload = async () => {
     if (!avatarFile || !user) return;
 
@@ -185,7 +168,6 @@ export default function ProfilePage() {
     try {
       await updateUserAvatar(user.uid, avatarFile);
 
-      // Limpar estado após upload bem-sucedido
       setAvatarFile(null);
       showSuccessMessage("Avatar atualizado com sucesso!");
     } catch (error) {
@@ -196,13 +178,11 @@ export default function ProfilePage() {
     }
   };
 
-  // Função para cancelar upload de avatar
   const cancelAvatarUpload = () => {
     setAvatarFile(null);
     setAvatarPreview(null);
   };
 
-  // Função para salvar perfil
   const handleSaveProfile = async () => {
     if (!user) return;
 
@@ -211,7 +191,6 @@ export default function ProfilePage() {
     setProfileSuccess(null);
 
     try {
-      // Verifica quais campos foram alterados
       const updates = {};
 
       if (profileData.displayName !== userProfile.displayName) {
@@ -229,7 +208,6 @@ export default function ProfilePage() {
         updates.cpf = profileData.cpf;
       }
 
-      // Se houver atualizações, envia para o Firestore
       if (Object.keys(updates).length > 0) {
         await updateUserProfile(user.uid, updates);
         showSuccessMessage("Perfil atualizado com sucesso!");
@@ -246,7 +224,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Função para validar endereço
   const validateAddress = () => {
     const requiredFields = ["street", "number", "city", "state", "zipCode"];
     const emptyFields = requiredFields.filter((field) => !newAddress[field]);
@@ -256,7 +233,6 @@ export default function ProfilePage() {
       return false;
     }
 
-    // Validação de CEP (formato 99999-999)
     const cepRegex = /^\d{5}-\d{3}$/;
     if (!cepRegex.test(newAddress.zipCode)) {
       setAddressError("CEP inválido. Use o formato 99999-999.");
@@ -266,14 +242,11 @@ export default function ProfilePage() {
     return true;
   };
 
-  // Função para formatar CEP
-
   const handleCepChange = (e) => {
     const formatted = formatZipCode(e.target.value);
     setNewAddress((prev) => ({ ...prev, zipCode: formatted }));
   };
 
-  // Função para adicionar novo endereço
   const handleAddAddress = async () => {
     if (!user) return;
 
@@ -286,7 +259,6 @@ export default function ProfilePage() {
     try {
       await addUserAddress(user.uid, newAddress);
 
-      // Limpa o formulário e fecha a seção de adição
       setNewAddress({
         street: "",
         number: "",
@@ -308,7 +280,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Função para excluir um endereço
   const handleDeleteAddress = async (addressId) => {
     if (!user || !addressId) return;
 
@@ -325,7 +296,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Função para definir endereço padrão
   const handleSetDefaultAddress = async (addressId) => {
     if (!user || !addressId) return;
 
@@ -344,7 +314,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Função para mostrar mensagem de sucesso temporária
   const showSuccessMessage = (message) => {
     if (activeTab === "personal" || activeTab === "profile") {
       setProfileSuccess(message);
@@ -355,7 +324,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Função para logout
   const handleLogout = async () => {
     setLoggingOut(true);
 
@@ -369,7 +337,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Formatar status do pedido
   const formatOrderStatus = (status) => {
     switch (status) {
       case "pending":
@@ -574,7 +541,7 @@ export default function ProfilePage() {
                       <button
                         onClick={() => {
                           setIsEditingProfile(false);
-                          // Revertendo para os dados originais
+
                           if (userProfile) {
                             setProfileData({
                               displayName: userProfile.displayName || "",

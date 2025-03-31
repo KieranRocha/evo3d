@@ -1,5 +1,5 @@
 "use client";
-// app/checkout/success/page.js
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -12,8 +12,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useDispatch } from "react-redux";
-import { clearCart } from "../../redux/slices/cartSlice";
-import CheckoutSteps from "../../components/CheckoutSteps";
+import { clearCart } from "../redux/slices/cartSlice";
+import CheckoutSteps from "../components/CheckoutSteps";
 
 export default function CheckoutSuccessPage() {
   const router = useRouter();
@@ -23,27 +23,21 @@ export default function CheckoutSuccessPage() {
   const [loading, setLoading] = useState(true);
   const [orderDetails, setOrderDetails] = useState(null);
 
-  // Extract order ID from URL (if available)
   const orderId = searchParams.get("order_id");
   const paymentId = searchParams.get("payment_id");
 
   useEffect(() => {
-    // Clear the cart when success page is loaded
     dispatch(clearCart());
 
-    // If we have an order ID, we can fetch more details
     if (orderId) {
       fetchOrderDetails(orderId);
     } else {
-      // If we don't have an ID, just show generic success page
       setLoading(false);
     }
   }, [dispatch, orderId]);
 
   const fetchOrderDetails = async (id) => {
     try {
-      // Here you would make a call to your API to get order details
-      // This is a simulation of data
       setTimeout(() => {
         setOrderDetails({
           id: id,
@@ -71,7 +65,6 @@ export default function CheckoutSuccessPage() {
     }
   };
 
-  // Helper function to format currency
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -79,7 +72,6 @@ export default function CheckoutSuccessPage() {
     }).format(value);
   };
 
-  // Helper function to create a random ID for demo purposes
   const createRandomId = () => {
     return Math.random().toString(36).substring(2, 10).toUpperCase();
   };

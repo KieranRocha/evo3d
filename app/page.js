@@ -5,14 +5,12 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { CloudUpload, Layers2, SlidersHorizontal, Truck } from "lucide-react";
 
-// Componentes
 import StepCard from "./components/StepCard";
 import StatisticCard from "./components/StatisticCard";
 import FeatureItem from "./components/FeatureItem";
 import MaterialTag from "./components/MaterialTag";
 import SectionHeading from "./components/SectionHeading";
 
-// Constantes
 const STEPS = [
   { id: 0, icon: CloudUpload, text: "Upload" },
   { id: 1, icon: SlidersHorizontal, text: "Ajustes" },
@@ -58,7 +56,6 @@ function Home() {
     }
   };
 
-  // Componente de conteúdo baseado na etapa selecionada
   const StepContent = () => {
     switch (selectedStep) {
       case 0:
