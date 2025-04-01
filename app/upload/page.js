@@ -7,6 +7,11 @@ import { useDispatch } from "react-redux";
 import { addToCart } from "../redux/slices/cartSlice";
 import { useRouter } from "next/navigation";
 import PrintTimeEstimator from "../components/PrintTimeEstimator";
+import {
+  uploadThumbnailToStorage,
+  getThumbnailURL,
+} from "../utils/firebase-storage";
+import { useAuth } from "../context/AuthContext"; // Para obter o userId
 
 import FileList from "../components/FileList";
 import FillOptions from "../components/FillOptions";
@@ -14,6 +19,7 @@ import MaterialOptions from "../components/MaterialOptions";
 import ColorOptions from "../components/ColorOptions";
 import ConfigurationStepper from "../components/ConfigurationStepper";
 import { calculateMaterialPrices } from "../components/MaterialPriceCalculator";
+import { convertSTLToThumbnail } from "../components/STLThumbnailConverter";
 
 function StepperUpload() {
   const dispatch = useDispatch();
@@ -26,6 +32,8 @@ function StepperUpload() {
   const [loadingMaterialPrices, setLoadingMaterialPrices] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [processingFiles, setProcessingFiles] = useState(false);
+  const { user } = useAuth();
 
   const fillOptions = [
     {
@@ -151,7 +159,9 @@ function StepperUpload() {
     fetchMaterialPrices();
   }, [selectedFileIndex, files]);
 
-  const processFiles = (selectedFiles) => {
+  // Função para fazer upload de uma imagem base64 para o Firebase Storage
+
+  const processFiles = async (selectedFiles) => {
     const validFiles = selectedFiles.filter((file) => {
       const ext = file.name.split(".").pop().toLowerCase();
       return [
@@ -176,32 +186,92 @@ function StepperUpload() {
       return;
     }
 
-    const newFiles = validFiles.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-      quantity: 1,
-      backgroundColor: "#ffffff",
-      fill: null,
-      material: null,
-      color: null,
-      isConfigured: false,
-    }));
+    setProcessingFiles(true);
 
-    setFiles((prev) => [...prev, ...newFiles]);
-    setSelectedFileIndex(files.length);
-    setCurrentStep(1);
+    try {
+      // Use Promise.all para processar todos os arquivos em paralelo
+      const processedFiles = await Promise.all(
+        validFiles.map(async (file) => {
+          // Cria a URL temporária para uso durante a sessão atual
+          const fileUrl = URL.createObjectURL(file);
 
-    if (files.length === 0 && newFiles.length > 0) {
-      setSelectedFileIndex(0);
+          // Inicialize o objeto fileInfo com valores padrão
+          let fileInfo = {
+            file,
+            url: fileUrl,
+            base64Thumbnail: "",
+            quantity: 1,
+            backgroundColor: "#ffffff",
+            fill: null,
+            material: null,
+            color: null,
+            isConfigured: false,
+          };
+
+          try {
+            if (file.name.toLowerCase().endsWith(".stl")) {
+              const base64Thumbnail = await convertSTLToThumbnail(file, {
+                width: 200,
+                height: 200,
+                backgroundColor: "#ffffff",
+                modelColor: "#3f8cff",
+              });
+
+              // Atualiza o fileInfo com o thumbnail base64
+              fileInfo.base64Thumbnail = base64Thumbnail;
+
+              if (base64Thumbnail) {
+                const fileId = `model_${Date.now()}`;
+                const userId = user?.uid;
+
+                // Upload para o Firebase Storage
+                const { url: thumbnailUrl, path: thumbnailPath } =
+                  await uploadThumbnailToStorage(
+                    base64Thumbnail,
+                    userId,
+                    fileId
+                  );
+                console.log("Thumbnail URL:", thumbnailUrl);
+                console.log("Thumbnail Path:", thumbnailPath);
+
+                // Atualiza fileInfo com as informações do Firebase
+                fileInfo = {
+                  ...fileInfo,
+                  fileId,
+                  thumbnailUrl,
+                  thumbnailPath,
+                };
+              }
+            }
+          } catch (err) {
+            console.error("Erro ao gerar thumbnail:", err);
+          }
+
+          return fileInfo;
+        })
+      );
+
+      setFiles((prev) => [...prev, ...processedFiles]);
+      setSelectedFileIndex(files.length);
+      setCurrentStep(1);
+
+      if (files.length === 0 && processedFiles.length > 0) {
+        setSelectedFileIndex(0);
+      }
+
+      setError(null);
+    } catch (error) {
+      console.error("Erro ao processar arquivos:", error);
+      setError("Ocorreu um erro ao processar os arquivos selecionados.");
+    } finally {
+      setProcessingFiles(false);
     }
-
-    setError(null);
   };
 
   const onDrop = useCallback(
-    (acceptedFiles) => {
+    async (acceptedFiles) => {
       if (acceptedFiles && acceptedFiles.length > 0) {
-        processFiles(acceptedFiles);
+        await processFiles(acceptedFiles);
       }
     },
     [files.length]
@@ -370,7 +440,8 @@ function StepperUpload() {
           id: `${file.file.name}_${Date.now()}`,
           name: file.file.name,
           url: file.url,
-          quantity: file.quantity,
+          thumbnailUrl: file.thumbnailUrl, // URL do Firebase Storage
+          thumbnailPath: file.thumbnailPath, // Caminho no Firebase Storage          quantity: file.quantity,
           fill: file.fill,
           material: file.material,
           color: file.color,
@@ -484,6 +555,12 @@ function StepperUpload() {
             {error && (
               <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
                 {error}
+              </div>
+            )}
+
+            {processingFiles && (
+              <div className="mt-4 p-3 bg-blue-100 text-blue-700 rounded-lg">
+                Processando arquivos... Isso pode levar alguns instantes.
               </div>
             )}
           </div>

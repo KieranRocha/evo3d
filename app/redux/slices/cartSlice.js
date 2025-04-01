@@ -1,3 +1,4 @@
+// app/redux/slices/cartSlice.js
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
@@ -18,8 +19,11 @@ export const cartSlice = createSlice({
         existingItem.quantity += newItem.quantity || 1;
         existingItem.totalPrice = existingItem.price * existingItem.quantity;
       } else {
+        // Certifique-se de que a thumbnailDataUrl (base64) seja incluída no item
         state.items.push({
           ...newItem,
+          // Mantemos apenas a thumbnailDataUrl para persistência; a URL temporária será recriada quando necessário
+          url: null, // Removemos a URL temporária que não persistirá após o recarregamento
           quantity: newItem.quantity || 1,
           totalPrice: newItem.price * (newItem.quantity || 1),
         });

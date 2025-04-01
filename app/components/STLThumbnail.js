@@ -1,21 +1,21 @@
-// components/STLThumbnail.jsx
+// components/STLThumbnail.js
 import { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader";
 
-export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
+export default function STLThumbnail({
+  url,
+  fileId,
+  file,
+  dataUrl,
+  backgroundColor = "#f5f5f5",
+}) {
   const canvasRef = useRef(null);
-  const [modelInfo, setModelInfo] = useState({
-    dimensions: { width: 0, height: 0, depth: 0 },
-    triangles: 0,
-    volume: 0,
-    surfaceArea: 0,
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!url || !canvasRef.current) return;
+    if (!canvasRef.current) return;
 
     let renderer, scene, camera;
     setIsLoading(true);
@@ -24,6 +24,37 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
     // Função para gerar a imagem estática
     const generateThumbnail = async () => {
       try {
+        // Se já temos um dataUrl (thumbnail base64), renderize-o diretamente
+        if (dataUrl) {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            setIsLoading(false);
+          };
+          img.onerror = (err) => {
+            console.error("Erro ao carregar a thumbnail:", err);
+            // Fallback para renderização 3D se a imagem falhar
+            renderSTLFromUrl();
+          };
+          img.src = dataUrl;
+          return;
+        }
+
+        // Caso contrário, renderize o STL como antes
+        renderSTLFromUrl();
+      } catch (err) {
+        console.error("Erro ao processar STL:", err);
+        setError("Não foi possível gerar a visualização do modelo");
+        setIsLoading(false);
+      }
+    };
+
+    // Função para renderizar o STL a partir da URL ou arquivo
+    const renderSTLFromUrl = async () => {
+      try {
         // Configuração básica
         const canvas = canvasRef.current;
         const width = canvas.width;
@@ -31,7 +62,6 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
 
         // Cria a cena
         scene = new THREE.Scene();
-        // Usa a cor de fundo customizada
         scene.background = new THREE.Color(backgroundColor);
 
         // Cria a câmera
@@ -59,18 +89,39 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
 
         // Carrega o modelo STL
         const loader = new STLLoader();
+        let geometry;
 
-        // Promisify o carregamento
-        const geometry = await new Promise((resolve, reject) => {
-          loader.load(
-            url,
-            (geometry) => resolve(geometry),
-            undefined,
-            (error) => reject(error)
-          );
-        });
+        // Usar diferentes abordagens para carregar o STL dependendo do que está disponível
+        if (url) {
+          // Carregar a partir da URL
+          geometry = await new Promise((resolve, reject) => {
+            loader.load(
+              url,
+              (geometry) => resolve(geometry),
+              undefined,
+              (error) => reject(error)
+            );
+          });
+        } else if (file) {
+          // Carregar a partir do objeto File
+          const reader = new FileReader();
+          geometry = await new Promise((resolve, reject) => {
+            reader.onload = (event) => {
+              try {
+                const geometry = loader.parse(event.target.result);
+                resolve(geometry);
+              } catch (e) {
+                reject(e);
+              }
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file);
+          });
+        } else {
+          throw new Error("Nenhum arquivo ou URL fornecido");
+        }
 
-        // Calcula informações do modelo
+        // Centraliza a geometria
         geometry.computeBoundingBox();
         const boundingBox = geometry.boundingBox;
 
@@ -81,9 +132,6 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
           depth: boundingBox.max.z - boundingBox.min.z,
         };
 
-        // Número de triângulos
-        const triangles = geometry.attributes.position.count / 3;
-
         // Centraliza a geometria
         const center = new THREE.Vector3();
         boundingBox.getCenter(center);
@@ -91,8 +139,7 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
 
         // Cria o material
         const material = new THREE.MeshPhongMaterial({
-          color: 0x3f8,
-
+          color: 0x3f8cff,
           shininess: 100,
         });
 
@@ -115,18 +162,6 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
         // Renderiza a cena
         renderer.render(scene, camera);
 
-        // Calcula volume e área
-        const volume = Math.abs(calculateVolume(geometry)) / 1000; // cm³
-        const surfaceArea = calculateSurfaceArea(geometry);
-
-        // Atualiza informações do modelo
-        setModelInfo({
-          dimensions,
-          triangles,
-          volume: volume.toFixed(2),
-          surfaceArea: surfaceArea.toFixed(2),
-        });
-
         setIsLoading(false);
 
         // Cleanup
@@ -138,78 +173,7 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
         console.error("Erro ao processar STL:", err);
         setError("Não foi possível gerar a visualização do modelo");
         setIsLoading(false);
-      } finally {
-        // Cleanup final
-        if (renderer) renderer.dispose();
       }
-    };
-
-    // Calcula volume aproximado
-    const calculateVolume = (geometry) => {
-      let volume = 0;
-      const pos = geometry.attributes.position;
-      const faces = pos.count / 3;
-
-      for (let i = 0; i < faces; i++) {
-        const idx = i * 3;
-        const p1 = new THREE.Vector3(
-          pos.getX(idx),
-          pos.getY(idx),
-          pos.getZ(idx)
-        );
-        const p2 = new THREE.Vector3(
-          pos.getX(idx + 1),
-          pos.getY(idx + 1),
-          pos.getZ(idx + 1)
-        );
-        const p3 = new THREE.Vector3(
-          pos.getX(idx + 2),
-          pos.getY(idx + 2),
-          pos.getZ(idx + 2)
-        );
-
-        // Calcular contribuição ao volume
-        const tetraVol = p1.dot(p2.clone().cross(p3)) / 6;
-        volume += tetraVol;
-      }
-
-      return volume;
-    };
-
-    // Calcula área de superfície aproximada
-    const calculateSurfaceArea = (geometry) => {
-      let area = 0;
-      const pos = geometry.attributes.position;
-      const faces = pos.count / 3;
-
-      for (let i = 0; i < faces; i++) {
-        const idx = i * 3;
-        const p1 = new THREE.Vector3(
-          pos.getX(idx),
-          pos.getY(idx),
-          pos.getZ(idx)
-        );
-        const p2 = new THREE.Vector3(
-          pos.getX(idx + 1),
-          pos.getY(idx + 1),
-          pos.getZ(idx + 1)
-        );
-        const p3 = new THREE.Vector3(
-          pos.getX(idx + 2),
-          pos.getY(idx + 2),
-          pos.getZ(idx + 2)
-        );
-
-        // Calcular área do triângulo
-        const side1 = new THREE.Vector3().subVectors(p2, p1);
-        const side2 = new THREE.Vector3().subVectors(p3, p1);
-        const cross = new THREE.Vector3().crossVectors(side1, side2);
-        const triangleArea = cross.length() / 2;
-
-        area += triangleArea;
-      }
-
-      return area;
     };
 
     // Gera a imagem estática
@@ -232,7 +196,7 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
         });
       }
     };
-  }, [url, backgroundColor]);
+  }, [url, backgroundColor, dataUrl, file]);
 
   return (
     <div className="space-y-4 ">
@@ -253,7 +217,7 @@ export default function STLThumbnail({ url, backgroundColor = "#f5f5f5" }) {
           ref={canvasRef}
           width={65}
           height={65}
-          className="w-full  bg-gray-100 rounded-md "
+          className="w-full bg-gray-100 rounded-md"
         />
       </div>
     </div>

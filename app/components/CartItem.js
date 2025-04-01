@@ -6,6 +6,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { removeFromCart, updateQuantity } from "../redux/slices/cartSlice";
 import STLThumbnail from "./STLThumbnail";
+import Image from "next/image";
 
 const CartItem = ({ item }) => {
   const dispatch = useDispatch();
@@ -13,18 +14,30 @@ const CartItem = ({ item }) => {
   const handleRemoveItem = () => {
     dispatch(removeFromCart(item.id));
   };
-
+  console.log(item);
   const handleQuantityChange = (value) => {
     const newQuantity = Math.max(1, value);
     dispatch(updateQuantity({ id: item.id, quantity: newQuantity }));
   };
 
   return (
-    <div className="bg-white rounded-lg  shadow-md border-gray-100 border overflow-hidden mb-4">
+    <div className="bg-white rounded-lg shadow-md border-gray-100 border overflow-hidden mb-4">
       <div className="flex items-start p-4">
         <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden mr-4 flex-shrink-0">
-          {item.url ? (
-            <STLThumbnail url={item.url} backgroundColor="#ffffff" />
+          {item.thumbnailUrl ? (
+            <Image
+              src={item.thumbnailUrl}
+              alt={item.name}
+              className="w-full h-full object-cover"
+              width={80}
+              height={80}
+            />
+          ) : item.url || item.thumbnailDataUrl ? (
+            <STLThumbnail
+              url={item.url}
+              dataUrl={item.thumbnailDataUrl}
+              backgroundColor="#ffffff"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
               3D
