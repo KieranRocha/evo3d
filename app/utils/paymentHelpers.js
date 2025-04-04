@@ -88,7 +88,25 @@ export const prepareRequestPayload = ({
     state: buyer.address?.state?.toUpperCase() || "",
     country: "BR",
   };
+  function formatPhoneForPagarme(phoneString) {
+    if (!phoneString) return null;
 
+    // Remove todos os caracteres não numéricos
+    const cleanPhone = phoneString.replace(/\D/g, "");
+
+    // Verifica se temos números suficientes
+    if (cleanPhone.length < 10) return null;
+
+    // Extrai código de área (2 dígitos) e número
+    const areaCode = cleanPhone.substring(0, 2);
+    const number = cleanPhone.substring(2);
+
+    return {
+      country_code: "55", // Brasil
+      area_code: areaCode,
+      number: number,
+    };
+  }
   const customerPayload = {
     name: buyer?.name || "Nome não informado",
     email: buyer?.email || "email@naoinformado.com",
@@ -96,7 +114,25 @@ export const prepareRequestPayload = ({
     document: cleanDocument,
     document_type: docType,
     address: addressPayload,
+    type: "individual", // Certifique-se de incluir o tipo
   };
+
+  // Adiciona a estrutura de telefones
+  const mobilePhone = formatPhoneForPagarme(buyer?.phone);
+  if (mobilePhone) {
+    customerPayload.phones = {
+      mobile_phone: mobilePhone,
+    };
+  } else {
+    // Adiciona um telefone padrão se não houver um válido
+    customerPayload.phones = {
+      mobile_phone: {
+        country_code: "55",
+        area_code: "11",
+        number: "999999999",
+      },
+    };
+  }
 
   const itemsPayload = cart.map((item) => ({
     amount: Math.round(item.price * 100),

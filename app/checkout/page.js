@@ -76,14 +76,14 @@ export default function CheckoutPage() {
   // Shipping options with pricing
   const [shippingOption, setShippingOption] = useState("standard");
   const shippingOptions = [
-    { id: "standard", name: "Entrega Padrão", price: 15, days: "5-7" },
+    { id: "standard", name: "Entrega Padrão", price: 0, days: "5-7" },
     { id: "express", name: "Entrega Expressa", price: 25, days: "2-3" },
   ];
 
   // Calculated totals using useMemo for performance
   const orderSummary = useMemo(() => {
     const subtotal = totalAmount;
-    const shipping = shippingOption === "express" ? 25 : 15;
+    const shipping = shippingOption === "express" ? 25 : 0;
     const taxes = subtotal * 0.05; // 5% of subtotal for taxes
     const total = subtotal + shipping + taxes;
 

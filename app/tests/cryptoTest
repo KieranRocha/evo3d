@@ -1,0 +1,17 @@
+const crypto = require("crypto");
+
+function generateSignature(payload, apiKey) {
+  const hmac = crypto.createHmac("sha256", apiKey);
+  hmac.update(typeof payload === "string" ? payload : JSON.stringify(payload));
+  return `sha256=${hmac.digest("hex")}`;
+}
+
+const payload = {
+  id: "order_abc123",
+  type: "order.paid",
+  created_at: "2023-05-01T10:00:00Z",
+};
+
+const apiKey = "sua_chave_api_do_pagarme";
+const signature = generateSignature(payload, apiKey);
+console.log(signature);
