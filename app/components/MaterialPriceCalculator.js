@@ -67,7 +67,7 @@ const calcularPrecoMaterial = (
 };
 
 /**
- * Função para calcular preços de materiais para um arquivo e preenchimento específicos
+ * Função otimizada para calcular preços de materiais em uma única requisição
  */
 const calculateMaterialPrices = async (
   file,
@@ -83,72 +83,57 @@ const calculateMaterialPrices = async (
       low: 25,
       hollow: 0,
     };
-    // Create FormData object to reuse for multiple requests
-    const createFormData = (materialId) => {
-      const infillPercentage = fillPercentageMap[fillOption.id] || 50;
-      const formData = new FormData();
-      formData.append("stl_file", file);
-      formData.append("infill", infillPercentage);
-      formData.append("material", materialId);
-      formData.append("quantity", quantity);
-      return formData;
-    };
 
-    // Calculate prices for each material in parallel
-    const pricePromises = baseMaterialOptions.map(async (material) => {
-      try {
-        // Send request to server to get price estimate
-        const formData = createFormData(material.id);
-        const response = await fetch("http://localhost:5000/estimate", {
-          method: "POST",
-          body: formData,
-        });
+    // Cria um FormData para a requisição em lote
+    const formData = new FormData();
+    formData.append("stl_file", file);
+    formData.append("infill", fillPercentageMap[fillOption.id] || 50);
+    formData.append("quantity", quantity);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Erro ao estimar o modelo");
-        }
+    // Adiciona uma lista de todos os materiais que queremos estimar
+    const materialIds = baseMaterialOptions.map((material) => material.id);
+    formData.append("materials", JSON.stringify(materialIds));
 
-        const data = await response.json();
+    // Faz uma única chamada de API para obter todos os preços
+    const response = await fetch("http://localhost:5000/estimate-batch", {
+      method: "POST",
+      body: formData,
+    });
 
-        // Calculate price from server response
-        const calculatedPrice = data.material?.weight_grams
-          ? calcularPrecoMaterial(
-              data.material.weight_grams,
-              material.id,
-              data.time,
-              quantity
-            )
-          : null;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Erro ao estimar o modelo");
+    }
 
-        return {
-          materialId: material.id,
+    const data = await response.json();
+
+    // Processa os resultados
+    const materialPrices = {};
+
+    baseMaterialOptions.forEach((material) => {
+      const materialData = data.materials[material.id];
+
+      if (materialData) {
+        // Calcula o preço com base nos dados retornados
+        const calculatedPrice = calcularPrecoMaterial(
+          materialData.weight_grams,
+          material.id,
+          materialData.print_time,
+          quantity
+        );
+
+        materialPrices[material.id] = {
           calculatedPrice: calculatedPrice?.custoPorPeca || null,
           totalPrice: calculatedPrice?.custoTotal || null,
           details: calculatedPrice?.detalhes || null,
         };
-      } catch (error) {
-        console.error(`Error getting price for ${material.id}:`, error);
-        return {
-          materialId: material.id,
+      } else {
+        materialPrices[material.id] = {
           calculatedPrice: null,
           totalPrice: null,
-          error: error.message,
+          error: "Não foi possível calcular o preço para este material",
         };
       }
-    });
-
-    // Wait for all price calculations to complete
-    const results = await Promise.all(pricePromises);
-
-    // Convert results array to object keyed by material id
-    const materialPrices = {};
-    results.forEach((result) => {
-      materialPrices[result.materialId] = {
-        calculatedPrice: result.calculatedPrice,
-        totalPrice: result.totalPrice,
-        details: result.details,
-      };
     });
 
     return materialPrices;

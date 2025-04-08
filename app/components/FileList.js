@@ -11,6 +11,10 @@ const FileList = ({
   onUpdateQuantity,
   onRemoveFile,
 }) => {
+  // Verifica se todos os arquivos estão configurados
+  const allFilesConfigured =
+    files.length > 0 && files.every((file) => file.isConfigured);
+
   return (
     <div className="w-full">
       <h2 className="text-xl font-semibold mb-4">
@@ -33,12 +37,15 @@ const FileList = ({
               <div
                 key={originalIndex}
                 className={`bg-white rounded-lg shadow-sm border overflow-hidden cursor-pointer transition-all
-                  ${
-                    selectedFileIndex === originalIndex
-                      ? "border-primary shadow-md"
-                      : "border-gray-200 hover:border-gray-300"
-                  }
-                `}
+                ${
+                  selectedFileIndex === originalIndex
+                    ? "border-primary shadow-md"
+                    : fileData.isConfigured
+                    ? "border-green-200 hover:border-green-300"
+                    : "border-gray-200 hover:border-gray-300"
+                }
+                ${fileData.isConfigured ? "animate-pulse-success" : ""}
+              `}
                 onClick={() => onSelectFile(originalIndex)}
               >
                 <div className="flex items-start p-3">
@@ -69,7 +76,11 @@ const FileList = ({
                       {fileData.isConfigured && (
                         <CheckCircle2
                           size={16}
-                          className="text-green-500 ml-1 flex-shrink-0"
+                          className={`${
+                            allFilesConfigured
+                              ? "text-green-500 animate-bounce"
+                              : "text-green-500"
+                          } ml-1 flex-shrink-0`}
                         />
                       )}
                     </div>

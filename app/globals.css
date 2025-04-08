@@ -13,3 +13,32 @@
   --breakpoint-ultrawide: 1440px;
   --drop-shadow-glow: 0px 2px 3px #949496;
 }
+@keyframes pulseSuccess {
+  0% {
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.2);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(72, 187, 120, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0);
+  }
+}
+
+.animate-pulse-success {
+  animation: pulseSuccess 2s 1;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s ease infinite;
+}

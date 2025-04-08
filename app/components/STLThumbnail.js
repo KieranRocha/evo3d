@@ -1,4 +1,5 @@
 // app/components/STLThumbnail.js - Componente simplificado
+import Image from "next/image";
 import { useState, useEffect } from "react";
 
 export default function STLThumbnail({
@@ -80,10 +81,11 @@ export default function STLThumbnail({
       )}
 
       {!isLoading && !error && thumbnailUrl ? (
-        <img
+        <Image
           src={thumbnailUrl}
           alt="STL Preview"
           className="w-full h-full object-contain"
+          fill
         />
       ) : !isLoading && !error && !thumbnailUrl ? (
         <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs">

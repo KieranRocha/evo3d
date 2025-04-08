@@ -20,7 +20,9 @@ import ColorOptions from "../components/ColorOptions";
 import ConfigurationStepper from "../components/ConfigurationStepper";
 import { calculateMaterialPrices } from "../components/MaterialPriceCalculator";
 import { convertSTLToThumbnail } from "../components/STLThumbnailConverter";
-
+import ConfigurationCompleteNotification from "../components/ConfigurationCompleteNotification";
+import ConfettiEffect from "../components/ConfettiEffect";
+import AllConfiguredIndicator from "../components/ConfiguredIndicator";
 function StepperUpload() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -32,8 +34,12 @@ function StepperUpload() {
   const [loadingMaterialPrices, setLoadingMaterialPrices] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [showCompletionNotification, setShowCompletionNotification] =
+    useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [processingFiles, setProcessingFiles] = useState(false);
   const { user } = useAuth();
+  const [allDone, setAllFilesConfigured] = useState(false); // Adicione esta linha para o estado de configuração
 
   const fillOptions = [
     {
@@ -419,14 +425,114 @@ function StepperUpload() {
 
     setCurrentStep(1);
 
+    // Verifica se existe algum arquivo não configurado
     const nextUnconfiguredIndex = files.findIndex(
       (file, index) => index !== selectedFileIndex && !file.isConfigured
     );
+
     if (nextUnconfiguredIndex !== -1) {
+      // Ainda existem arquivos para configurar, seleciona o próximo
       setSelectedFileIndex(nextUnconfiguredIndex);
+    } else {
+      // Verifica se este era o último arquivo a ser configurado
+      const fileBeingConfigured = files[selectedFileIndex];
+      const isLastFile =
+        files.filter((file) => !file.isConfigured).length <= 1 &&
+        fileBeingConfigured.fill &&
+        fileBeingConfigured.material &&
+        colorOptions.find((color) => color.id === colorId);
+
+      if (isLastFile) {
+        // Todos os arquivos estão configurados!
+        setAllFilesConfigured(true);
+        setSelectedFileIndex(null); // Remove a seleção para mostrar o indicador
+      }
     }
   };
 
+  // 4. No JSX do componente, modifique a área de configuração para mostrar o indicador quando todos os arquivos estiverem configurados
+  // Substitua a seção de configuração por:
+
+  {
+    /* Painel de configuração */
+  }
+  <div className="w-full md:w-2/3 bg-white p-6 rounded-lg shadow-sm">
+    {allDone ? (
+      <AllConfiguredIndicator />
+    ) : selectedFileIndex !== null ? (
+      <>
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">Configurar sua peça</h2>
+          <p className="text-gray-600">{files[selectedFileIndex].file.name}</p>
+
+          {/* Stepper */}
+          <ConfigurationStepper
+            currentStep={currentStep}
+            steps={["Preenchimento", "Material", "Cor"]}
+            onStepClick={setCurrentStep}
+            fill={files[selectedFileIndex].fill}
+            material={files[selectedFileIndex].material}
+          />
+        </div>
+
+        {/* Etapa 1: Preenchimento */}
+        {currentStep === 1 && (
+          <FillOptions
+            fillOptions={fillOptions}
+            selectedFill={files[selectedFileIndex].fill}
+            onSelect={updateFill}
+          />
+        )}
+
+        {/* Etapa 2: Material */}
+        {currentStep === 2 && (
+          <>
+            <MaterialOptions
+              materials={getMaterialOptions()}
+              selectedMaterial={files[selectedFileIndex].material}
+              loadingMaterialPrices={loadingMaterialPrices}
+              onSelect={updateMaterial}
+            />
+
+            {files[selectedFileIndex].fill && (
+              <PrintTimeEstimator
+                file={files[selectedFileIndex].file}
+                fillOption={files[selectedFileIndex].fill}
+                quantity={files[selectedFileIndex].quantity}
+                material={files[selectedFileIndex].material?.id}
+              />
+            )}
+          </>
+        )}
+
+        {/* Etapa 3: Cor */}
+        {currentStep === 3 && (
+          <ColorOptions
+            colorOptions={colorOptions}
+            selectedColor={files[selectedFileIndex].color}
+            onSelect={updateColor}
+          />
+        )}
+      </>
+    ) : (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-gray-500 mb-4">
+          Selecione um arquivo da lista para começar a configuração
+        </p>
+        {files.length === 0 && (
+          <p className="text-gray-400">
+            Ou faça upload de arquivos 3D para começar
+          </p>
+        )}
+      </div>
+    )}
+  </div>;
+
+  // 4. Adicione esta função para fechar a notificação:
+  const handleCloseNotification = () => {
+    setShowCompletionNotification(false);
+    setShowConfetti(false);
+  };
   const selectFile = (index) => {
     setSelectedFileIndex(index);
     setCurrentStep(1);
@@ -721,9 +827,9 @@ function StepperUpload() {
                     )}
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex h-full flex-col items-center justify-center py-12 text-center">
                     <p className="text-gray-500 mb-4">
-                      Selecione um arquivo da lista para começar a configuração
+                      <AllConfiguredIndicator />
                     </p>
                     {files.length === 0 && (
                       <p className="text-gray-400">
@@ -739,6 +845,14 @@ function StepperUpload() {
           {/* Action Buttons & Resumo do pedido */}
         </div>
       </div>
+      {showConfetti && <ConfettiEffect duration={7000} />}
+
+      {showCompletionNotification && (
+        <ConfigurationCompleteNotification
+          onClose={handleCloseNotification}
+          filesCount={files.length}
+        />
+      )}
     </div>
   );
 }
