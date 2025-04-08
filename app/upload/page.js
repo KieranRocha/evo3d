@@ -210,41 +210,62 @@ function StepperUpload() {
 
           try {
             if (file.name.toLowerCase().endsWith(".stl")) {
-              const base64Thumbnail = await convertSTLToThumbnail(file, {
-                width: 200,
-                height: 200,
-                backgroundColor: "#ffffff",
-                modelColor: "#3f8cff",
-              });
+              // Criar um FormData para enviar o arquivo para o servidor
+              const formData = new FormData();
+              formData.append("stl_file", file);
 
-              // Atualiza o fileInfo com o thumbnail base64
-              fileInfo.base64Thumbnail = base64Thumbnail;
+              // Enviar para o endpoint de geração de thumbnail no servidor
+              const response = await fetch(
+                "http://localhost:5000/generate-thumbnail",
+                {
+                  method: "POST",
+                  body: formData,
+                }
+              );
 
-              if (base64Thumbnail) {
-                const fileId = `model_${Date.now()}`;
-                const userId = user?.uid;
+              if (!response.ok) {
+                throw new Error("Falha ao gerar thumbnail no servidor");
+              }
 
-                // Upload para o Firebase Storage
-                const { url: thumbnailUrl, path: thumbnailPath } =
-                  await uploadThumbnailToStorage(
-                    base64Thumbnail,
-                    userId,
-                    fileId
-                  );
-                console.log("Thumbnail URL:", thumbnailUrl);
-                console.log("Thumbnail Path:", thumbnailPath);
+              const data = await response.json();
 
-                // Atualiza fileInfo com as informações do Firebase
-                fileInfo = {
-                  ...fileInfo,
-                  fileId,
-                  thumbnailUrl,
-                  thumbnailPath,
-                };
+              // Se o servidor retornou com sucesso, use a imagem base64
+              if (data.success && data.image) {
+                fileInfo.base64Thumbnail = `data:image/png;base64,${data.image}`;
+
+                // Se necessário, faça upload do thumbnail para o Firebase Storage
+                if (data.image) {
+                  const fileId = `model_${Date.now()}`;
+                  const userId = user?.uid;
+
+                  // Upload para o Firebase Storage (se necessário)
+                  try {
+                    const { url: thumbnailUrl, path: thumbnailPath } =
+                      await uploadThumbnailToStorage(
+                        fileInfo.base64Thumbnail,
+                        userId,
+                        fileId
+                      );
+
+                    // Atualiza fileInfo com as informações do Firebase
+                    fileInfo = {
+                      ...fileInfo,
+                      fileId,
+                      thumbnailUrl,
+                      thumbnailPath,
+                    };
+                  } catch (uploadError) {
+                    console.error(
+                      "Erro ao fazer upload para o Firebase:",
+                      uploadError
+                    );
+                  }
+                }
               }
             }
           } catch (err) {
-            console.error("Erro ao gerar thumbnail:", err);
+            console.error("Erro ao processar thumbnail:", err);
+            // Continua mesmo com erro, apenas sem o thumbnail
           }
 
           return fileInfo;
@@ -267,7 +288,6 @@ function StepperUpload() {
       setProcessingFiles(false);
     }
   };
-
   const onDrop = useCallback(
     async (acceptedFiles) => {
       if (acceptedFiles && acceptedFiles.length > 0) {
