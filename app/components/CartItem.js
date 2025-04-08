@@ -7,12 +7,14 @@ import { useDispatch } from "react-redux";
 import { removeFromCart, updateQuantity } from "../redux/slices/cartSlice";
 import STLThumbnail from "./STLThumbnail";
 import Image from "next/image";
+import { useUI } from "../context/UIContext";
 
 const CartItem = ({ item }) => {
   const dispatch = useDispatch();
-
+  const { success, error, showDialog } = useUI();
   const handleRemoveItem = () => {
     dispatch(removeFromCart(item.id));
+    error(`${item.name} removido do carrinho`);
   };
   console.log(item);
   const handleQuantityChange = (value) => {

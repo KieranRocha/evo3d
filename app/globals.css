@@ -5,7 +5,16 @@
   --font-poppins: "Poppins", "sans-serif";
   --color-primary: #065bed;
   --color-primary-hover: #1c6aef;
+  --color-primary-50: rgba(6, 91, 237, 0.05);
   --color-secondary: #07337e;
+  --color-success: #00af5f;
+  --color-warning: #ffbc00;
+  --color-error: #ef3333;
+
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 300ms;
+  --animation-duration-slow: 500ms;
+  --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
   --breakpoint-mobile: 366px;
   --breakpoint-tablet: 768px;
   --breakpoint-notebook: 992px;
@@ -42,3 +51,86 @@
 .animate-bounce {
   animation: bounce 1s ease infinite;
 }
+
+/* Utilitários customizados */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .shadow-inner-top {
+    box-shadow: inset 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .shadow-inner-bottom {
+    box-shadow: inset 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Gradientes comuns */
+  .bg-gradient-primary {
+    background: linear-gradient(
+      90deg,
+      var(--color-primary) 0%,
+      var(--color-secondary) 100%
+    );
+  }
+
+  .bg-gradient-light {
+    background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+  }
+
+  /* Transições */
+  .transition-fast {
+    transition-duration: var(--animation-duration-fast);
+    transition-timing-function: var(--animation-easing);
+  }
+
+  .transition-normal {
+    transition-duration: var(--animation-duration-normal);
+    transition-timing-function: var(--animation-easing);
+  }
+
+  .transition-slow {
+    transition-duration: var(--animation-duration-slow);
+    transition-timing-function: var(--animation-easing);
+  }
+}
+
+/* Animações personalizadas */
+/* @keyframes pulseSuccess {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 175, 95, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 175, 95, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 175, 95, 0);
+  }
+}
+
+.animate-pulse-success {
+  animation: pulseSuccess 5s infinite;
+} */
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-custom {
+  animation: bounce 1s ease infinite;
+}
+
+/* Estilos para skeleton loader */
+
+/* Configuração para modo escuro (se implementado) */

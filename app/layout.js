@@ -3,7 +3,7 @@ import Navbar from "./components/Navbar";
 import "./globals.css";
 import Footer from "./components/Footer";
 import { ReduxProvider } from "./redux/provider";
-import { AuthProviderWrapper } from "./providers/AuthProvider";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,13 +28,11 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ReduxProvider>
-          <AuthProviderWrapper>
-            <div className="flex flex-col min-h-screen">
-              <Navbar />
-              <main className="">{children}</main>
-              <Footer />
-            </div>
-          </AuthProviderWrapper>
+          <Providers>
+            <Navbar />
+            <main>{children}</main>
+            <Footer />
+          </Providers>
         </ReduxProvider>
       </body>
     </html>

@@ -131,7 +131,7 @@ function Home() {
   return (
     <main className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <section className="relative">
+      <section className="relative h-screen">
         <div className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="container mx-auto p-4 z-10 relative">
             <div className="text-center">
@@ -146,10 +146,10 @@ function Home() {
             <div className="flex gap-5 md:gap-10 items-center justify-center z-10 relative mt-10">
               <Link
                 href={"/upload"}
-                className="border flex items-center justify-center   h-15 w-40 md:w-60 px-4 md:px-8 py-4 rounded-xl bg-primary text-white font-poppins font-medium hover:bg-primary-hover transition-colors duration-300"
+                className=" flex items-center justify-center   h-15 w-40 md:w-60 px-4 md:px-8 py-4 rounded-xl bg-primary text-white font-poppins font-medium hover:bg-primary-hover transition-colors duration-300"
                 aria-label="Fazer upload de arquivo"
               >
-                Faça o Upload
+                Fazer o Upload
               </Link>
               <Link
                 href={"/"}
@@ -161,7 +161,7 @@ function Home() {
             </div>
           </div>
         </div>
-        <div className="relative w-full h-40 md:h-[30rem] 2xl:-mt-50">
+        <div className="absolute w-full h-40 md:h-[30rem] top-80">
           <Image
             src="/main-bg.png"
             alt="Impressão 3D - Imagem de fundo"
@@ -175,10 +175,10 @@ function Home() {
       </section>
 
       {/* Steps Section */}
-      <section className="bg-gray-100 -mt-10 w-full md:-mt-40 xl:-mt-20">
-        <div className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-center">
+      <section className="bg-gray-100 - w-full -mt-10 ">
+        <div className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-center mt-30">
           <div className="container p-4 z-10 flex flex-col w-full">
-            <SectionHeading className="text-center mt-15 md:mt-40">
+            <SectionHeading className="text-center ">
               Mude a forma como suas ideias <br /> saem do papel!
             </SectionHeading>
 

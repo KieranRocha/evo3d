@@ -42,7 +42,7 @@ const FileList = ({
                     ? "border-primary shadow-md"
                     : fileData.isConfigured
                     ? "border-green-200 hover:border-green-300"
-                    : "border-gray-200 hover:border-gray-300"
+                    : "border-red-200 hover:border-red-300"
                 }
                 ${fileData.isConfigured ? "animate-pulse-success" : ""}
               `}

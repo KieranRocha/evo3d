@@ -103,7 +103,16 @@ export default function Navbar() {
                 <ShoppingCart size={20} />
                 {totalQuantity > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {totalQuantity}
+                    {/* *** MODIFICAÇÃO AQUI (Desktop) *** */}
+                    {totalQuantity > 9 ? (
+                      // Renderiza 9 com o + sobrescrito
+                      <span>
+                        9<sup>+</sup>
+                      </span>
+                    ) : (
+                      // Caso contrário, mostra a quantidade normal (1 a 9)
+                      totalQuantity
+                    )}
                   </span>
                 )}
               </Link>

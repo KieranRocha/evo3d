@@ -16,12 +16,6 @@ export async function POST(request) {
       { status: 500 }
     );
   }
-  console.log(
-    "Usando chave de API (parcialmente oculta):",
-    pagarmeSecretKey.substring(0, 8) +
-      "..." +
-      pagarmeSecretKey.substring(pagarmeSecretKey.length - 4)
-  );
 
   try {
     requestBody = await request.json();

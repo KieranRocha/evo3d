@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, ShoppingCart, Check } from "lucide-react";
+import { UploadCloud, ShoppingCart, Check, Loader2 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../redux/slices/cartSlice";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,8 @@ import { convertSTLToThumbnail } from "../components/STLThumbnailConverter";
 import ConfigurationCompleteNotification from "../components/ConfigurationCompleteNotification";
 import ConfettiEffect from "../components/ConfettiEffect";
 import AllConfiguredIndicator from "../components/ConfiguredIndicator";
+import { useUI } from "../context/UIContext";
+
 function StepperUpload() {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -40,6 +42,7 @@ function StepperUpload() {
   const [processingFiles, setProcessingFiles] = useState(false);
   const { user } = useAuth();
   const [allDone, setAllFilesConfigured] = useState(false); // Adicione esta linha para o estado de configuração
+  const { setLoading, success, showDialog } = useUI();
 
   const fillOptions = [
     {
@@ -191,7 +194,7 @@ function StepperUpload() {
       setError("Por favor, selecione arquivos em formatos suportados.");
       return;
     }
-
+    setLoading(true);
     setProcessingFiles(true);
 
     try {
@@ -292,6 +295,7 @@ function StepperUpload() {
       setError("Ocorreu um erro ao processar os arquivos selecionados.");
     } finally {
       setProcessingFiles(false);
+      setLoading(false);
     }
   };
   const onDrop = useCallback(
@@ -335,6 +339,7 @@ function StepperUpload() {
       const newFiles = [...prev];
       URL.revokeObjectURL(newFiles[index].url);
       newFiles.splice(index, 1);
+
       return newFiles;
     });
 
@@ -529,10 +534,7 @@ function StepperUpload() {
   </div>;
 
   // 4. Adicione esta função para fechar a notificação:
-  const handleCloseNotification = () => {
-    setShowCompletionNotification(false);
-    setShowConfetti(false);
-  };
+
   const selectFile = (index) => {
     setSelectedFileIndex(index);
     setCurrentStep(1);
@@ -557,6 +559,7 @@ function StepperUpload() {
 
   const addItemsToCart = () => {
     setAddingToCart(true);
+    success("Produtos adicionados ao carrinho com sucesso!");
 
     try {
       const configuredFiles = files.filter((file) => file.isConfigured);
@@ -625,7 +628,12 @@ function StepperUpload() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
+      {processingFiles && (
+        <div className="mt-4 p-3  opacity-40 text-blue-800 rounded-lg absolute h-full w-full flex items-center justify-center z-50">
+          <div className="flex flex-col items-center justify-center"></div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 pt-10 pb-20">
         <div className="flex flex-col items-center">
           <h1 className="text-4xl font-bold text-secondary font-poppins">
@@ -683,21 +691,9 @@ function StepperUpload() {
                 {error}
               </div>
             )}
-
-            {processingFiles && (
-              <div className="mt-4 p-3 bg-blue-100 text-blue-700 rounded-lg">
-                Processando arquivos... Isso pode levar alguns instantes.
-              </div>
-            )}
           </div>
 
           {/* Added to Cart Confirmation Message */}
-          {addedToCart && (
-            <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center">
-              <Check className="mr-2" />
-              <span>Items adicionados ao carrinho!</span>
-            </div>
-          )}
 
           {/* Conteúdo principal com lista de arquivos e configuração */}
           {files.length > 0 && (
@@ -828,9 +824,9 @@ function StepperUpload() {
                   </>
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center py-12 text-center">
-                    <p className="text-gray-500 mb-4">
+                    <div className="text-gray-500 mb-4">
                       <AllConfiguredIndicator />
-                    </p>
+                    </div>
                     {files.length === 0 && (
                       <p className="text-gray-400">
                         Ou faça upload de arquivos 3D para começar

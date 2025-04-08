@@ -84,11 +84,14 @@ export async function POST(request) {
 
       console.log("Assinatura do webhook verificada com sucesso");
     } else {
-      console.warn(
-        "Webhook recebido sem assinatura. Considere rejeitar em ambiente de produção."
-      );
+      // console.warn(
+      //   "Webhook recebido sem assinatura. Considere rejeitar em ambiente de produção."
+      // );
       // Em produção, você pode querer rejeitar webhooks sem assinatura
-      // return NextResponse.json({ success: false, message: "Assinatura ausente" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: "Assinatura ausente" },
+        { status: 401 }
+      );
     }
 
     // Processar o payload do webhook
