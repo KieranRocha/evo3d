@@ -17,9 +17,9 @@
   --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
   --breakpoint-mobile: 366px;
   --breakpoint-tablet: 768px;
-  --breakpoint-notebook: 992px;
-  --breakpoint-desktop: 1200px;
-  --breakpoint-ultrawide: 1440px;
+  --breakpoint-notebook: 1000px;
+  --breakpoint-desktop: 1400px;
+  --breakpoint-ultrawide: 2560px;
   --drop-shadow-glow: 0px 2px 3px #949496;
 }
 @keyframes pulseSuccess {

@@ -4,6 +4,8 @@ const nextConfig = {
   images: {
     domains: [
       "firebasestorage.googleapis.com",
+      "images.unsplash.com",
+      "cdn.jsdelivr.net",
       // mantenha outros domínios que você já tenha configurado
     ],
   },
