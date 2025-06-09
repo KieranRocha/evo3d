@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Mail,
-  Lock,
-  User,
-  AlertCircle,
-  Loader,
-  CheckCircle,
-  Eye,
-  EyeOff,
-  Calendar,
-  Phone,
-  ChevronLeft,
-} from "lucide-react";
+import { Mail, User, Calendar, Phone, Loader } from "lucide-react";
 import { registerUser } from "../firebase/auth";
+
+// Importando componentes reutilizáveis
+import AuthCard from "../components/auth/AuthCard";
+import AuthHeader from "../components/auth/AuthHeader";
+import AuthFooter from "../components/auth/AuthFooter";
+import FormInput from "../components/auth/FormInput";
+import PasswordInput from "../components/auth/PasswordInput";
+import PasswordStrength from "../components/auth/PasswordStrength";
+import TermsCheckbox from "../components/auth/TermsCheckbox";
+import { Button } from "../components/ui/Button";
+
+// Funções utilitárias
+import { formatPhone } from "../utils/common";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -31,59 +31,12 @@ export default function RegisterPage() {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registerError, setRegisterError] = useState(null);
   const [registerSuccess, setRegisterSuccess] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [passwordFeedback, setPasswordFeedback] = useState("");
 
   const router = useRouter();
 
-  useEffect(() => {
-    if (!formData.password) {
-      setPasswordStrength(0);
-      setPasswordFeedback("");
-      return;
-    }
-
-    let strength = 0;
-    let feedback = [];
-
-    if (formData.password.length >= 8) {
-      strength += 1;
-    } else {
-      feedback.push("A senha deve ter pelo menos 8 caracteres");
-    }
-
-    if (/[A-Z]/.test(formData.password)) {
-      strength += 1;
-    } else {
-      feedback.push("Inclua pelo menos uma letra maiúscula");
-    }
-
-    if (/[a-z]/.test(formData.password)) {
-      strength += 1;
-    } else {
-      feedback.push("Inclua pelo menos uma letra minúscula");
-    }
-
-    if (/[0-9]/.test(formData.password)) {
-      strength += 1;
-    } else {
-      feedback.push("Inclua pelo menos um número");
-    }
-
-    if (/[^A-Za-z0-9]/.test(formData.password)) {
-      strength += 1;
-    } else {
-      feedback.push("Inclua pelo menos um caractere especial");
-    }
-
-    setPasswordStrength(strength);
-    setPasswordFeedback(feedback.join(". "));
-  }, [formData.password]);
-
+  // Função para lidar com alterações nos campos do formulário
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -99,6 +52,17 @@ export default function RegisterPage() {
     }
   };
 
+  // Função de manipulação do telefone com formatação
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhone(e.target.value);
+    setFormData((prev) => ({ ...prev, phone: formatted }));
+
+    if (errors.phone) {
+      setErrors((prev) => ({ ...prev, phone: null }));
+    }
+  };
+
+  // Função de validação do formulário
   const validateForm = () => {
     const newErrors = {};
 
@@ -134,8 +98,6 @@ export default function RegisterPage() {
       newErrors.password = "Senha é obrigatória";
     } else if (formData.password.length < 8) {
       newErrors.password = "A senha deve ter pelo menos 8 caracteres";
-    } else if (passwordStrength < 3) {
-      newErrors.password = "A senha é muito fraca";
     }
 
     if (!formData.confirmPassword) {
@@ -152,6 +114,7 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Função para lidar com o envio do formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
     setRegisterError(null);
@@ -183,38 +146,7 @@ export default function RegisterPage() {
     }
   };
 
-  const formatPhone = (value) => {
-    if (!value) return value;
-
-    const phoneNumber = value.replace(/\D/g, "");
-
-    if (phoneNumber.length <= 2) {
-      return `(${phoneNumber}`;
-    }
-    if (phoneNumber.length <= 7) {
-      return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2)}`;
-    }
-    if (phoneNumber.length <= 11) {
-      return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
-        2,
-        7
-      )}-${phoneNumber.slice(7)}`;
-    }
-    return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(
-      2,
-      7
-    )}-${phoneNumber.slice(7, 11)}`;
-  };
-
-  const handlePhoneChange = (e) => {
-    const formatted = formatPhone(e.target.value);
-    setFormData((prev) => ({ ...prev, phone: formatted }));
-
-    if (errors.phone) {
-      setErrors((prev) => ({ ...prev, phone: null }));
-    }
-  };
-
+  // Função para mapear códigos de erro para mensagens amigáveis
   const getErrorMessage = (errorCode) => {
     switch (errorCode) {
       case "auth/email-already-in-use":
@@ -232,16 +164,30 @@ export default function RegisterPage() {
     }
   };
 
+  // Renderiza tela de sucesso após o registro
   if (registerSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md mx-auto text-center">
+      <AuthCard title="Registro Concluído" showBackButton={false}>
+        <div className="text-center py-8">
           <div className="flex justify-center mb-4">
-            <div className="bg-green-100 p-3 rounded-full">
-              <CheckCircle size={40} className="text-green-600" />
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-8 w-8 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-secondary mb-2">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Registro concluído com sucesso!
           </h2>
           <p className="text-gray-600 mb-6">
@@ -252,356 +198,141 @@ export default function RegisterPage() {
             Você será redirecionado para a página de login em instantes...
           </p>
         </div>
-      </div>
+      </AuthCard>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-lg">
-        <div className="bg-white p-8 rounded-lg shadow-md">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-center text-secondary">
-              Crie sua conta
-            </h2>
-            <Link
-              href="/"
-              className="text-gray-500 hover:text-gray-700 flex items-center text-sm"
-            >
-              <ChevronLeft size={16} className="mr-1" />
-              Voltar
-            </Link>
+    <AuthCard title="Crie sua conta" maxWidth="lg">
+      <AuthHeader error={registerError} />
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Nome */}
+          <div className="md:col-span-2">
+            <FormInput
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Seu nome completo"
+              label="Nome completo"
+              icon={<User />}
+              error={errors.name}
+              required
+            />
           </div>
 
-          {registerError && (
-            <div className="mb-6 bg-red-100 text-red-700 p-4 rounded-lg flex items-start">
-              <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
-              <p>{registerError}</p>
-            </div>
-          )}
+          {/* Email */}
+          <div className="md:col-span-2">
+            <FormInput
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="seu.email@exemplo.com"
+              label="Email"
+              icon={<Mail />}
+              error={errors.email}
+              required
+              autoComplete="email"
+            />
+          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nome */}
-              <div className="md:col-span-2">
-                <label
-                  htmlFor="name"
-                  className="block text-gray-700 font-medium mb-2"
-                >
-                  Nome completo <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User size={18} className="text-gray-500" />
-                  </div>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Seu nome completo"
-                    className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
-                      errors.name ? "border-red-500" : "border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-primary`}
-                  />
-                </div>
-                {errors.name && (
-                  <div className="mt-1 text-red-500 text-sm flex items-center">
-                    <AlertCircle size={14} className="mr-1" />
-                    {errors.name}
-                  </div>
-                )}
-              </div>
+          {/* Telefone */}
+          <div>
+            <FormInput
+              id="phone"
+              name="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={handlePhoneChange}
+              placeholder="(99) 99999-9999"
+              label="Telefone"
+              labelExtra={
+                <span className="text-gray-500 text-sm font-normal ml-1">
+                  (opcional)
+                </span>
+              }
+              icon={<Phone />}
+              error={errors.phone}
+              autoComplete="tel"
+            />
+          </div>
 
-              {/* Email */}
-              <div className="md:col-span-2">
-                <label
-                  htmlFor="email"
-                  className="block text-gray-700 font-medium mb-2"
-                >
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail size={18} className="text-gray-500" />
-                  </div>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="seu.email@exemplo.com"
-                    className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
-                      errors.email ? "border-red-500" : "border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-primary`}
-                  />
-                </div>
-                {errors.email && (
-                  <div className="mt-1 text-red-500 text-sm flex items-center">
-                    <AlertCircle size={14} className="mr-1" />
-                    {errors.email}
-                  </div>
-                )}
-              </div>
+          {/* Data de nascimento */}
+          <div>
+            <FormInput
+              id="birthdate"
+              name="birthdate"
+              type="date"
+              value={formData.birthdate}
+              onChange={handleChange}
+              label="Data de nascimento"
+              labelExtra={
+                <span className="text-gray-500 text-sm font-normal ml-1">
+                  (opcional)
+                </span>
+              }
+              icon={<Calendar />}
+              error={errors.birthdate}
+            />
+          </div>
 
-              {/* Telefone */}
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-gray-700 font-medium mb-2"
-                >
-                  Telefone{" "}
-                  <span className="text-gray-500 text-sm font-normal">
-                    (opcional)
-                  </span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Phone size={18} className="text-gray-500" />
-                  </div>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    placeholder="(99) 99999-9999"
-                    className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
-                      errors.phone ? "border-red-500" : "border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-primary`}
-                  />
-                </div>
-                {errors.phone && (
-                  <div className="mt-1 text-red-500 text-sm flex items-center">
-                    <AlertCircle size={14} className="mr-1" />
-                    {errors.phone}
-                  </div>
-                )}
-              </div>
+          {/* Senha */}
+          <div>
+            <PasswordInput
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              label="Senha"
+              error={errors.password}
+              required
+            />
+            <PasswordStrength password={formData.password} />
+          </div>
 
-              {/* Data de nascimento */}
-              <div>
-                <label
-                  htmlFor="birthdate"
-                  className="block text-gray-700 font-medium mb-2"
-                >
-                  Data de nascimento{" "}
-                  <span className="text-gray-500 text-sm font-normal">
-                    (opcional)
-                  </span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar size={18} className="text-gray-500" />
-                  </div>
-                  <input
-                    type="date"
-                    id="birthdate"
-                    name="birthdate"
-                    value={formData.birthdate}
-                    onChange={handleChange}
-                    className={`w-full pl-10 pr-3 py-2 rounded-lg border ${
-                      errors.birthdate ? "border-red-500" : "border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-primary`}
-                  />
-                </div>
-                {errors.birthdate && (
-                  <div className="mt-1 text-red-500 text-sm flex items-center">
-                    <AlertCircle size={14} className="mr-1" />
-                    {errors.birthdate}
-                  </div>
-                )}
-              </div>
-
-              {/* Senha */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-gray-700 font-medium mb-2"
-                >
-                  Senha <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock size={18} className="text-gray-500" />
-                  </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="********"
-                    className={`w-full pl-10 pr-12 py-2 rounded-lg border ${
-                      errors.password ? "border-red-500" : "border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-primary`}
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={18} className="text-gray-500" />
-                    ) : (
-                      <Eye size={18} className="text-gray-500" />
-                    )}
-                  </button>
-                </div>
-                {errors.password ? (
-                  <div className="mt-1 text-red-500 text-sm flex items-center">
-                    <AlertCircle size={14} className="mr-1" />
-                    {errors.password}
-                  </div>
-                ) : formData.password ? (
-                  <div className="mt-2">
-                    <div className="flex items-center mb-1">
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full ${
-                            passwordStrength < 2
-                              ? "bg-red-500"
-                              : passwordStrength < 4
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
-                          }`}
-                          style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="ml-2 text-xs text-gray-500">
-                        {passwordStrength < 2
-                          ? "Fraca"
-                          : passwordStrength < 4
-                          ? "Média"
-                          : "Forte"}
-                      </span>
-                    </div>
-                    {passwordFeedback && (
-                      <p className="text-xs text-gray-500">
-                        {passwordFeedback}
-                      </p>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-
-              {/* Confirmar Senha */}
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-gray-700 font-medium mb-2"
-                >
-                  Confirmar senha <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock size={18} className="text-gray-500" />
-                  </div>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="********"
-                    className={`w-full pl-10 pr-12 py-2 rounded-lg border ${
-                      errors.confirmPassword
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    } focus:outline-none focus:ring-2 focus:ring-primary`}
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={18} className="text-gray-500" />
-                    ) : (
-                      <Eye size={18} className="text-gray-500" />
-                    )}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <div className="mt-1 text-red-500 text-sm flex items-center">
-                    <AlertCircle size={14} className="mr-1" />
-                    {errors.confirmPassword}
-                  </div>
-                )}
-              </div>
-
-              {/* Termos e condições */}
-              <div className="md:col-span-2 mt-2">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="acceptTerms"
-                      name="acceptTerms"
-                      type="checkbox"
-                      checked={formData.acceptTerms}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="acceptTerms" className="text-gray-700">
-                      Eu concordo com os{" "}
-                      <Link
-                        href="/terms"
-                        className="text-primary hover:underline"
-                      >
-                        termos e condições
-                      </Link>{" "}
-                      e com a{" "}
-                      <Link
-                        href="/privacy"
-                        className="text-primary hover:underline"
-                      >
-                        política de privacidade
-                      </Link>
-                    </label>
-                  </div>
-                </div>
-                {errors.acceptTerms && (
-                  <div className="mt-1 text-red-500 text-sm flex items-center">
-                    <AlertCircle size={14} className="mr-1" />
-                    {errors.acceptTerms}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-6 bg-primary text-white py-2 rounded-lg hover:bg-primary-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-70 flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <Loader size={18} className="animate-spin mr-2" />
-                  Registrando...
-                </>
-              ) : (
-                "Criar conta"
-              )}
-            </button>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                Já tem uma conta?{" "}
-                <Link
-                  href="/login"
-                  className="text-primary hover:underline font-medium"
-                >
-                  Faça login
-                </Link>
-              </p>
-            </div>
-          </form>
+          {/* Confirmar Senha */}
+          <div>
+            <PasswordInput
+              id="confirmPassword"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              label="Confirmar senha"
+              error={errors.confirmPassword}
+              required
+            />
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Termos e condições */}
+        <TermsCheckbox
+          checked={formData.acceptTerms}
+          onChange={handleChange}
+          error={errors.acceptTerms}
+        />
+
+        <Button
+          type="submit"
+          variant="primary"
+          fullWidth
+          size="lg"
+          isLoading={loading}
+          className="mt-6"
+        >
+          {loading ? "Registrando..." : "Criar conta"}
+        </Button>
+      </form>
+
+      <AuthFooter
+        text="Já tem uma conta?"
+        linkText="Faça login"
+        linkUrl="/login"
+      />
+    </AuthCard>
   );
 }
